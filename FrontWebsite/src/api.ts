@@ -117,3 +117,9 @@ export async function linkWhatsAppPhone(phoneNumber: string): Promise<void> {
     });
     if (!res.ok) throw new Error('Failed to link phone');
 }
+
+export async function checkUserProfile(phoneNumber: string): Promise<{ hasProfile: boolean }> {
+    const res = await fetch(`${API_BASE}/user/profile?phone=${encodeURIComponent(phoneNumber)}`);
+    if (!res.ok) return { hasProfile: false };
+    return res.json();
+}

@@ -157,6 +157,29 @@ router.post('/status', (req, res) => {
   }
 });
 
+// GET /api/user/profile?phone=+1XXXXXXXXXX — check if user has existing WhatsApp profile
+router.get('/user/profile', (req, res) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) return res.status(400).json({ error: 'phone is required' });
+
+    // Check if this phone has an existing Backboard thread (i.e. they've used WhatsApp already)
+    const fs = require('fs');
+    const path = require('path');
+    const threadMapPath = path.join(__dirname, '..', 'thread_map.json');
+    let hasProfile = false;
+    if (fs.existsSync(threadMapPath)) {
+      const threadMap = JSON.parse(fs.readFileSync(threadMapPath, 'utf8'));
+      // Twilio WhatsApp numbers are stored as "whatsapp:+1XXXXXXXXXX"
+      hasProfile = !!(threadMap[`whatsapp:${phone}`] || threadMap[phone]);
+    }
+    res.json({ hasProfile });
+  } catch (err) {
+    console.error('Profile check error:', err.message);
+    res.json({ hasProfile: false });
+  }
+});
+
 // POST /api/user/link-phone — store a user's WhatsApp phone number
 router.post('/user/link-phone', (req, res) => {
   try {

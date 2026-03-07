@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { useAuth0 } from '@auth0/auth0-react';
 import {
   ArrowRight,
   Sparkles,
@@ -16,7 +17,10 @@ import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 
 export const LandingPage = () => {
-  const navigate = useNavigate();
+  const { loginWithRedirect } = useAuth0();
+  const startJourney = () => loginWithRedirect({
+    authorizationParams: { redirect_uri: window.location.origin + '/phone-link' }
+  });
 
   return (
     <div className="min-h-screen bg-cream relative overflow-hidden">
@@ -47,7 +51,7 @@ export const LandingPage = () => {
           <a href="#features" className="hover:text-forest transition-colors">Modules</a>
           <a href="#stories" className="hover:text-forest transition-colors">Archive</a>
           <button
-            onClick={() => navigate('/onboarding')}
+            onClick={startJourney}
             className="px-8 py-3 bg-forest text-cream rounded hover:bg-forest/90 transition-all active:scale-95 shadow-xl shadow-forest/20"
           >
             Begin Journey
@@ -78,7 +82,7 @@ export const LandingPage = () => {
               </p>
               <div className="flex flex-wrap gap-6">
                 <button
-                  onClick={() => navigate('/onboarding')}
+                  onClick={startJourney}
                   className="px-8 py-4 bg-forest text-cream rounded font-bold text-lg hover:bg-forest/90 transition-all flex items-center gap-4 group shadow-xl shadow-forest/20"
                 >
                   Start your journey
@@ -331,7 +335,7 @@ export const LandingPage = () => {
                 Join thousands of newcomers who are building their lives in Canada with confidence and clarity.
               </p>
               <button
-                onClick={() => navigate('/onboarding')}
+                onClick={startJourney}
                 className="px-16 py-6 bg-mint text-forest rounded font-bold text-2xl hover:bg-white transition-all hover:scale-105 shadow-2xl shadow-black/20 active:scale-95"
               >
                 Begin Your Journey

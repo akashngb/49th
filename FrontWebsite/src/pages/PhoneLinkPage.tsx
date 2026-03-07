@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRootsUser } from '../hooks/useRootsUser';
-import { linkWhatsAppPhone } from '../api';
+import { linkWhatsAppPhone, checkUserProfile } from '../api';
 
 export const PhoneLinkPage = () => {
     const { phone: linkedPhone } = useRootsUser();
@@ -10,10 +10,12 @@ export const PhoneLinkPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // If already linked, skip straight to dashboard
+    // If already linked, check profile and skip page
     useEffect(() => {
         if (linkedPhone) {
-            navigate('/dashboard');
+            checkUserProfile(linkedPhone).then(({ hasProfile }) => {
+                navigate(hasProfile ? '/dashboard' : '/onboarding');
+            });
         }
     }, [linkedPhone, navigate]);
 
@@ -22,8 +24,11 @@ export const PhoneLinkPage = () => {
         setLoading(true);
         setError(null);
         try {
-            await linkWhatsAppPhone(`+1${phone}`);
-            navigate('/dashboard');
+            const fullPhone = `+1${phone}`;
+            await linkWhatsAppPhone(fullPhone);
+            // Check if this number already has a WhatsApp profile/history
+            const { hasProfile } = await checkUserProfile(fullPhone);
+            navigate(hasProfile ? '/dashboard' : '/onboarding');
         } catch (e) {
             setError('Could not link your number. Please try again.');
             setLoading(false);
