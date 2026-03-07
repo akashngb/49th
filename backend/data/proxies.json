@@ -1,0 +1,110 @@
+[
+  {
+    "id": "proxy_001",
+    "name": "Rania M.",
+    "origin": "Egypt",
+    "profession": "Software Engineer",
+    "arrived": "Toronto, Winter 2023",
+    "familySize": "Spouse + 1 child",
+    "status": "PR approved",
+    "wisdomEntries": [
+      {
+        "category": "banking",
+        "insight": "Open a Scotiabank StartRight account the first week. They have a specific newcomer program with no fees for one year and they don't require credit history. Don't waste time at TD or RBC first — they'll turn you away without a SIN.",
+        "timeToAction": "Week 1"
+      },
+      {
+        "category": "credit",
+        "insight": "Apply for a secured credit card immediately after your bank account. Put $500 on it, use it for groceries only, pay it off every month. In 6 months you'll have enough history for a real card. This is the single most important financial move you make in year one.",
+        "timeToAction": "Week 2"
+      },
+      {
+        "category": "health",
+        "insight": "The OHIP 3-month wait is real. Buy Manulife CoverMe visitor insurance for exactly 90 days the day you land. It costs around $120 and covers emergencies. Don't skip this — one ER visit without it costs $3,000+.",
+        "timeToAction": "Day 1"
+      },
+      {
+        "category": "employment",
+        "insight": "Your Egyptian degree and experience are invisible here. Register with ACCES Employment within your first month — they have a specific tech bridging program and will connect you with Canadian employers who are open to newcomers. Got my first Canadian job through them in 4 months.",
+        "timeToAction": "Month 1"
+      },
+      {
+        "category": "community",
+        "insight": "Don't only hang out with other Egyptians — I made this mistake for 8 months. Join a recreational sports league or a professional meetup in your field. Your Canadian network is what gets you your second job.",
+        "timeToAction": "Month 2"
+      }
+    ]
+  },
+  {
+    "id": "proxy_002",
+    "name": "Priya K.",
+    "origin": "India",
+    "profession": "Registered Nurse",
+    "arrived": "Mississauga, Summer 2022",
+    "familySize": "Spouse + 2 children",
+    "status": "PR approved",
+    "wisdomEntries": [
+      {
+        "category": "credentials",
+        "insight": "Start the CNO registration process before you land if possible. The credential assessment alone takes 3-4 months. I wasted 6 months thinking I could start after arrival. Contact CNO the day you get your work permit and begin immediately.",
+        "timeToAction": "Before arrival"
+      },
+      {
+        "category": "banking",
+        "insight": "RBC Newcomer Advantage was best for us — they have Punjabi-speaking advisors at the Mississauga branches and understood our situation. Bring your passport, landing papers, and proof of address. They opened our account same day.",
+        "timeToAction": "Week 1"
+      },
+      {
+        "category": "children",
+        "insight": "Register your kids for school immediately. The TDSB has a Welcome Centre specifically for newcomer children — they assess their level and place them appropriately. Don't wait for September — they can start mid-year.",
+        "timeToAction": "Week 2"
+      },
+      {
+        "category": "taxes",
+        "insight": "Apply for Canada Child Benefit the week you land — not after your first tax return. You can apply with your landing documents. We missed 4 months of payments because nobody told us this. That was $1,400 we didn't get.",
+        "timeToAction": "Week 1"
+      },
+      {
+        "category": "community",
+        "insight": "The Mississauga South Asian community is huge but insular. The best thing we did was join a mixed newcomer group through the Mississauga Library settlement services. Met our closest Canadian friends there — people from 8 different countries all figuring it out together.",
+        "timeToAction": "Month 1"
+      }
+    ]
+  },
+  {
+    "id": "proxy_003",
+    "name": "Diego R.",
+    "origin": "Colombia",
+    "profession": "Civil Engineer",
+    "arrived": "Vancouver, Fall 2022",
+    "familySize": "Solo",
+    "status": "PR approved",
+    "wisdomEntries": [
+      {
+        "category": "housing",
+        "insight": "Do not sign a lease before you arrive. Stay in a furnished short-term rental for your first month and learn the neighbourhoods. I signed a lease in Surrey sight unseen and spent a year regretting it. The $400 extra per month for a short-term place is worth every cent.",
+        "timeToAction": "Before arrival"
+      },
+      {
+        "category": "credentials",
+        "insight": "Engineers Canada and EGBC (BC) are separate bodies. You need both assessed. Start with Engineers Canada for the academic assessment, then EGBC for the provincial license. Budget 12-18 months and around $800 in fees. There is no shortcut.",
+        "timeToAction": "Month 1"
+      },
+      {
+        "category": "employment",
+        "insight": "LinkedIn is everything in Vancouver tech and engineering. Update your profile the week you land, connect with every Canadian engineer you meet, and post about your arrival and job search. I got 3 interviews from a single post about my experience.",
+        "timeToAction": "Week 1"
+      },
+      {
+        "category": "mental_health",
+        "insight": "Nobody talks about how lonely the first 6 months are. I was successful in Colombia — manager of 40 people — and in Canada I felt invisible. This is normal. Find a therapist through BetterHelp or the Vancouver Newcomer Health Centre. Talking to someone saved my year.",
+        "timeToAction": "Month 2"
+      },
+      {
+        "category": "taxes",
+        "insight": "File your taxes even if you arrived in November and only worked 2 weeks. You are entitled to a partial year GST/HST credit and potentially a BC climate action tax credit. H&R Block has a newcomer tax service for $80 that is worth it for your first return.",
+        "timeToAction": "February after arrival"
+      }
+    ]
+  }
+]

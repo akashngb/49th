@@ -1,5 +1,6 @@
 const { generateCriticalPath } = require('../services/gemini');
 const { formatStatusMessage } = require('../services/statusTracker');
+const { formatProxyMessage } = require('../services/proxyMatcher');
 
 const sessions = {};
 
@@ -23,6 +24,11 @@ async function handle(userId, message) {
   }
 
   const session = sessions[userId];
+
+  // PROXY flow
+  if (message.trim().toUpperCase() === 'PROXY' || message.trim().toUpperCase() === 'MORE') {
+    return formatProxyMessage(session.profile);
+  }
 
   // STATUS flow
   if (message.trim().toUpperCase() === 'STATUS') {
@@ -51,7 +57,6 @@ async function handle(userId, message) {
       return ONBOARDING_QUESTIONS[session.questionIndex];
     }
 
-    // All questions answered — generate critical path
     session.stage = 'active';
     session.profile = {
       answers: session.answers,
@@ -66,16 +71,16 @@ async function handle(userId, message) {
         const emoji = task.urgency === 'critical' ? '🔴' : task.urgency === 'high' ? '🟡' : '🟢';
         response += `${emoji} *${i + 1}. ${task.title}*\n${task.description}\n⏱ ${task.estimatedTime}\n\n`;
       });
-      response += "Reply with any question, or type *STATUS* to check your application timeline.";
+      response += "Type *PROXY* to hear from people who made your exact move, or *STATUS* to check your application timeline.";
       return response;
     } catch (err) {
-      console.error('Gemini error:', err);
-      return `Here's your critical path for the next 90 days 🗺️\n\n🔴 *1. Apply for your SIN*\nRequired before you can work legally in Canada.\n⏱ 2-3 hours\n\n🔴 *2. Open a Canadian bank account*\nNeeded for direct deposit and building credit.\n⏱ 1-2 hours\n\n🟡 *3. Get private health insurance*\nYou have a 90-day wait for OHIP. Get bridging coverage now.\n⏱ 30 minutes\n\n🟡 *4. Apply for your Ontario Health Card (OHIP)*\nBook this appointment now — the wait is real.\n⏱ 2 hours\n\n🟢 *5. Apply for a secured credit card*\nStart building Canadian credit history immediately.\n⏱ 30 minutes\n\nReply with any question, or type *STATUS* to check your application timeline.`;
+      console.error('Gemini error:', err.response?.data || err.message);
+      return `Here's your critical path...` // hardcoded fallback
     }
   }
 
   // ACTIVE — general responses
-  return "I'm here to help. You can type *STATUS* to check your application timeline, or just ask me anything about settling in Canada 🌱";
+  return "I'm here to help 🌱\n\nType:\n*STATUS* — check your application timeline\n*PROXY* — hear from people who made your exact move\n\nOr just ask me anything about settling in Canada.";
 }
 
 module.exports = { handle };
