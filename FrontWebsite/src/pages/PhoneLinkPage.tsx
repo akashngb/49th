@@ -86,7 +86,7 @@ export const PhoneLinkPage = () => {
 
                 {/* Skip link */}
                 <p
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate('/onboarding')}
                     className="text-[10px] uppercase tracking-[0.3em] text-charcoal/30 hover:text-charcoal cursor-pointer font-bold text-center mt-8"
                 >
                     Skip for now
