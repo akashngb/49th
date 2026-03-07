@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, X, MessageCircle, Sparkles, User, Bot, Volume2, Mic, Square } from 'lucide-react';
+import { Send, X, MessageCircle, Sparkles, User, Bot, Volume2, Mic, Square, Maximize2, Minimize2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+import { runBrowserTask } from '../api';
 
 interface Message {
   id: string;
@@ -17,6 +20,7 @@ interface Message {
 
 export const AIAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -28,15 +32,63 @@ export const AIAssistant = () => {
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [browserActive, setBrowserActive] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const userId = useRef<string>(`user_${Math.random().toString(36).slice(2, 9)}`);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isTyping]);
+
+  // Poll for browser agent questions and results when browser task is active
+  useEffect(() => {
+    if (!browserActive) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`http://localhost:3001/api/browser-status/${userId.current}`);
+        const data = await res.json();
+
+        // If browser sent a question, show it in chat
+        if (data.pendingQuestion) {
+          setMessages(prev => {
+            const already = prev.some(m => m.text === data.pendingQuestion);
+            if (already) return prev;
+            return [...prev, {
+              id: `browser_q_${Date.now()}`,
+              text: `🤖 *Browser Agent:*\n\n${data.pendingQuestion}`,
+              sender: 'bot' as const,
+              timestamp: new Date()
+            }];
+          });
+        }
+
+        // If browser finished, show result and stop polling
+        if (data.result) {
+          setMessages(prev => [...prev, {
+            id: `browser_done_${Date.now()}`,
+            text: data.result,
+            sender: 'bot' as const,
+            timestamp: new Date()
+          }]);
+          setBrowserActive(false);
+        }
+
+        // If browser session ended (no longer active)
+        if (!data.active && !data.pendingQuestion && !data.result) {
+          setBrowserActive(false);
+        }
+      } catch (e) {
+        // Ignore polling errors
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [browserActive]);
+
+
 
   const startRecording = async () => {
     try {
@@ -104,7 +156,15 @@ export const AIAssistant = () => {
     try {
       // Try Backboard AI (persistent memory) first
       const { sendAIChat } = await import('../api');
-      const responseText = await sendAIChat(currentInput);
+      const responseText = await sendAIChat(currentInput, userId.current);
+
+      // If user typed YES and response confirms browser launched, start polling and trigger backend
+      if (currentInput.trim().toUpperCase() === 'YES' && responseText.includes('Browser Agent Activated')) {
+        setBrowserActive(true);
+        // Fire and forget the actual browser task launch with generic intent
+        runBrowserTask('generic_browser_research', { query: responseText }).catch(console.error);
+      }
+
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
         text: responseText,
@@ -113,6 +173,7 @@ export const AIAssistant = () => {
       };
       setMessages(prev => [...prev, botMsg]);
     } catch {
+
       try {
         // Fallback to coordinator API
         const { sendChat } = await import('../api');
@@ -173,9 +234,18 @@ export const AIAssistant = () => {
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              width: isExpanded ? 'calc(100vw - 48px)' : '384px',
+              height: isExpanded ? 'calc(100vh - 48px)' : '600px',
+              bottom: isExpanded ? '24px' : '96px',
+              right: '24px'
+            }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-taupe"
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed bg-white rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden border border-taupe"
           >
             {/* Header */}
             <div className="bg-forest p-4 text-white flex items-center justify-between">
@@ -188,9 +258,14 @@ export const AIAssistant = () => {
                   <p className="text-[10px] opacity-80">Always here to help</p>
                 </div>
               </div>
-              <button onClick={() => setIsOpen(false)} className="hover:opacity-70">
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setIsExpanded(!isExpanded)} className="hover:opacity-70 transition-opacity p-1">
+                  {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                </button>
+                <button onClick={() => setIsOpen(false)} className="hover:opacity-70 transition-opacity p-1">
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             {/* Messages */}
@@ -199,23 +274,27 @@ export const AIAssistant = () => {
                 <div
                   key={msg.id}
                   className={cn(
-                    "flex gap-2 max-w-[85%]",
-                    msg.sender === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
+                    "flex gap-3",
+                    msg.sender === 'user' ? "ml-auto flex-row-reverse max-w-[85%]" : "mr-auto max-w-[95%]"
                   )}
                 >
                   <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                    msg.sender === 'user' ? "bg-terracotta/10" : "bg-forest/10"
+                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1",
+                    msg.sender === 'user' ? "bg-terracotta text-white" : "bg-forest text-white"
                   )}>
-                    {msg.sender === 'user' ? <User size={16} className="text-terracotta" /> : <Bot size={16} className="text-forest" />}
+                    {msg.sender === 'user' ? <User size={16} /> : <Bot size={16} />}
                   </div>
                   <div className={cn(
-                    "p-3 rounded-2xl text-sm leading-relaxed",
+                    "p-4 rounded-2xl text-sm leading-relaxed",
                     msg.sender === 'user'
                       ? "bg-terracotta text-white rounded-tr-none"
-                      : "bg-white border border-taupe text-charcoal rounded-tl-none shadow-sm"
+                      : "bg-white border border-taupe text-charcoal rounded-tl-none shadow-sm prose prose-sm prose-p:my-1 prose-ul:my-1 prose-li:my-0"
                   )}>
-                    {msg.text}
+                    {msg.sender === 'bot' ? (
+                      <ReactMarkdown>{msg.text}</ReactMarkdown>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                    )}
                     {msg.sender === 'bot' && (
                       <button
                         onClick={() => handleListen(msg.text)}

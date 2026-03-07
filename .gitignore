@@ -1,7 +1,6 @@
 .env*
 .env.example
-node_modules/
-dist/
-build/
+node_modules
+
 *.log
-.DS_Store
+*.pdf

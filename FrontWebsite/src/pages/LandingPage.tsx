@@ -20,16 +20,7 @@ export const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-cream relative overflow-hidden">
-      {/* Marquee Header */}
-      <div className="bg-forest text-cream py-3 border-b border-ink relative z-20 overflow-hidden">
-        <div className="marquee-track whitespace-nowrap">
-          {[1, 2, 3, 4].map((i) => (
-            <span key={i} className="text-[10px] font-bold uppercase tracking-[0.5em] px-12">
-              Settlement Intelligence • Toronto • Vancouver • Montreal • Calgary • Ottawa • Halifax • Edmonton •
-            </span>
-          ))}
-        </div>
-      </div>
+
 
       {/* Navigation */}
       <nav className="relative z-10 max-w-[1400px] mx-auto px-8 py-8 flex items-center justify-between border-b border-ink">

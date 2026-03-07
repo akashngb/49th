@@ -16,6 +16,7 @@ import {
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Logo } from './Logo';
+import { TaskControl } from './TaskControl';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -102,6 +103,7 @@ export const Sidebar = () => {
           <button className="flex-1 flex items-center justify-center p-4 rounded-2xl border border-ink bg-white text-terracotta hover:bg-terracotta hover:text-white transition-all duration-300">
             <LogOut size={20} />
           </button>
+          <TaskControl userId="testUser" />
         </div>
       </div>
     </aside>

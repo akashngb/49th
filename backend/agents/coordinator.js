@@ -1,86 +1,125 @@
-const { generateCriticalPath } = require('../services/gemini');
-const { formatStatusMessage } = require('../services/statusTracker');
-const { formatProxyMessage } = require('../services/proxyMatcher');
+const { createRootsAssistant } = require('./rootsAssistant');
+const { executeSkill } = require('../services/browserController');
 
-const sessions = {};
+let client;
+let assistantId = null;
 
-const ONBOARDING_QUESTIONS = [
-  "Which city did you land in?",
-  "What is your immigration status? (e.g. study permit, work permit, PR, visitor)",
-  "What do you do professionally?",
-  "Do you have family with you, or are you arriving alone?",
-  "What are you most worried about right now?"
-];
+async function getClient() {
+  if (client) return client;
+  const { BackboardClient } = await import('backboard-sdk');
+  client = new BackboardClient({
+    apiKey: process.env.BACKBOARD_API_KEY
+  });
+  return client;
+}
+
+async function getAssistantId() {
+  const client = await getClient();
+  if (assistantId) return assistantId;
+
+  const assistants = await client.listAssistants({ limit: 10 });
+
+  const existing = assistants.data.find(a => a.name === "Roots All-in-One Assistant");
+
+  if (existing) {
+    assistantId = existing.assistantId;
+    // Always update to ensure prompt and tools are fresh
+    const { BROWSER_TOOLS } = require('../skills/browser_api');
+    await client.updateAssistant(assistantId, {
+      system_prompt: `You are the master "Roots" settlement companion.
+      Your mission is to handle every aspect of a newcomer's journey to Canada.
+      
+      You MUST use your autonomous browser tools to perform actions whenever a user asks for help with a specific task (SIN, Health Card, Jobs, Schools, etc.).
+      Do NOT tell the user you cannot access websites. You HAVE browser tools.
+      
+      CRITICAL: Describe the browser steps you're about to take and ask for explicit "YES" permission before execution.`,
+      tools: BROWSER_TOOLS
+    });
+  } else {
+    const assistant = await createRootsAssistant(client);
+    assistantId = assistant.assistantId;
+  }
+
+  return assistantId;
+}
+
+
+const userThreads = {}; // Map user IDs to Backboard thread IDs
+const pendingActions = {}; // Store tool contexts awaiting confirmation
 
 async function handle(userId, message) {
-  if (!sessions[userId]) {
-    sessions[userId] = {
-      stage: 'onboarding',
-      questionIndex: 0,
-      profile: {},
-      answers: []
-    };
-    return "Welcome to Roots 🌱\n\nI help newcomers to Canada figure out exactly what to do — and in what order. Let's start with a few quick questions.\n\nFirst: where did you arrive from, and when did you land in Canada?";
+  const client = await getClient();
+  const assistantId = await getAssistantId();
+
+  if (!userThreads[userId]) {
+    const thread = await client.createThread(assistantId);
+    userThreads[userId] = thread.threadId;
   }
 
-  const session = sessions[userId];
 
-  // PROXY flow
-  if (message.trim().toUpperCase() === 'PROXY' || message.trim().toUpperCase() === 'MORE') {
-    return formatProxyMessage(session.profile);
-  }
+  const threadId = userThreads[userId];
 
-  // STATUS flow
-  if (message.trim().toUpperCase() === 'STATUS') {
-    session.stage = 'status_q1';
-    return "To check your application timeline, what type of application did you submit?\n\n(e.g. PR - Express Entry, Work Permit, Study Permit, PR - Spousal)";
-  }
+  // Check if we are responding to a permission request
+  if (pendingActions[userId] && message.trim().toUpperCase() === 'YES') {
+    const { skillName, args, runId, toolCallId } = pendingActions[userId];
+    delete pendingActions[userId];
 
-  if (session.stage === 'status_q1') {
-    session.statusType = message;
-    session.stage = 'status_q2';
-    return "How many months ago did you submit your application?";
-  }
+    const result = await executeSkill(skillName, args);
 
-  if (session.stage === 'status_q2') {
-    const months = parseInt(message);
-    session.stage = 'active';
-    return formatStatusMessage(session.statusType, months);
-  }
-
-  // ONBOARDING flow
-  if (session.stage === 'onboarding') {
-    session.answers.push(message);
-    session.questionIndex++;
-
-    if (session.questionIndex < ONBOARDING_QUESTIONS.length) {
-      return ONBOARDING_QUESTIONS[session.questionIndex];
+    if (result.status === "WAITING_FOR_INFO") {
+      // Keep the action pending but update with missing fields
+      pendingActions[userId] = { skillName, args, runId, toolCallId, waitingFor: result.missingFields };
+      return `⏳ *ACTION PAUSED* ⏳\n\n${result.message}`;
     }
 
-    session.stage = 'active';
-    session.profile = {
-      answers: session.answers,
-      questions: ONBOARDING_QUESTIONS
-    };
+    // Submit the tool result back to OpenClaw so the agent knows it worked
+    await client.submitToolOutputs(threadId, runId, [{
+      tool_call_id: toolCallId,
+      output: JSON.stringify(result)
+    }]);
 
-    try {
-      const path = await generateCriticalPath(session.profile);
-      const tasks = path.tasks.slice(0, 5);
-      let response = "Here's your critical path for the next 90 days 🗺️\n\n";
-      tasks.forEach((task, i) => {
-        const emoji = task.urgency === 'critical' ? '🔴' : task.urgency === 'high' ? '🟡' : '🟢';
-        response += `${emoji} *${i + 1}. ${task.title}*\n${task.description}\n⏱ ${task.estimatedTime}\n\n`;
-      });
-      response += "Type *PROXY* to hear from people who made your exact move, or *STATUS* to check your application timeline.";
-      return response;
-    } catch (err) {
-      console.error('Gemini error:', err.response?.data || err.message);
-      return `Here's your critical path...` // hardcoded fallback
-    }
+    return `🚀 *AUTONOMOUS ACTION IN PROGRESS* 🚀\n\n${result.message}`;
   }
 
-  // ACTIVE — general responses
-  return "I'm here to help 🌱\n\nType:\n*STATUS* — check your application timeline\n*PROXY* — hear from people who made your exact move\n\nOr just ask me anything about settling in Canada.";
+  // If we were waiting for info and the user provided it
+  if (pendingActions[userId] && pendingActions[userId].waitingFor) {
+    const { skillName, args, runId, toolCallId } = pendingActions[userId];
+    // In a real app, we'd update 'args' with the new message/file
+    // For now, we simulate that the info was received
+    delete pendingActions[userId];
+
+    const result = await executeSkill(skillName, { ...args, infoReceived: true });
+
+    return `✅ *INFO RECEIVED* ✅\n\nResuming automation...\n\n${result.message}`;
+  }
+
+
+  // Normal message flow
+  const response = await client.addMessage(threadId, {
+    content: message,
+    memory: "Auto",
+    model_name: "gpt-4o" // Use a stronger model for reliable tool calling
+  });
+
+
+  // Handle Tool Calls (Browser Automation)
+  if (response.status === 'REQUIRES_ACTION' && response.toolCalls) {
+    const toolCall = response.toolCalls[0];
+    const functionName = toolCall.function.name;
+    const args = toolCall.function.parsedArguments;
+
+    // Save the context for when the user says "YES"
+    pendingActions[userId] = {
+      skillName: functionName,
+      args: args,
+      runId: response.runId,
+      toolCallId: toolCall.id
+    };
+
+    return `🛡️ *PERMISSION REQUIRED* 🛡️\n\nI can start the *${functionName}* process for you on the official government site.\n\nI will fill the form with your details and guide you through the documents.\n\nShould I proceed? Type *YES* to start automation.`;
+  }
+
+  return response.content;
 }
 
 module.exports = { handle };

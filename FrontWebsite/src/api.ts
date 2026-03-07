@@ -1,7 +1,6 @@
 const API_BASE = 'http://localhost:3001/api';
 
-// Generate a simple persistent user ID for the session
-function getUserId(): string {
+export function getUserId(): string {
     let id = sessionStorage.getItem('roots_user_id');
     if (!id) {
         id = 'web_' + Math.random().toString(36).substring(2, 10);
@@ -9,6 +8,8 @@ function getUserId(): string {
     }
     return id;
 }
+
+// getUserId is now exported above
 
 export async function sendChat(message: string): Promise<string> {
     const res = await fetch(`${API_BASE}/chat`, {
@@ -107,4 +108,46 @@ export async function transcribeVoice(audioBlob: Blob): Promise<string> {
     if (!res.ok) throw new Error('STT request failed');
     const data = await res.json();
     return data.text;
+}
+
+// Launch a browser automation task for a given settlement task
+export async function runBrowserTask(taskId: string, args?: Record<string, string>): Promise<{ started: boolean }> {
+    const res = await fetch(`${API_BASE}/run-task`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: getUserId(), taskId, args }),
+    });
+    if (!res.ok) throw new Error('Run task request failed');
+    return res.json();
+}
+
+// Poll browser agent status (question/result)
+export async function getBrowserStatus(): Promise<{ active: boolean; question?: string; result?: string }> {
+    const res = await fetch(`${API_BASE}/browser-status/${getUserId()}`);
+    if (!res.ok) throw new Error('Status request failed');
+    return res.json();
+}
+
+// Pause a running browser task
+export async function pauseBrowserTask(): Promise<void> {
+    await fetch(`${API_BASE}/pause/${getUserId()}`, { method: 'POST' });
+}
+
+// Resume a paused browser task
+export async function resumeBrowserTask(): Promise<void> {
+    await fetch(`${API_BASE}/resume/${getUserId()}`, { method: 'POST' });
+}
+
+// Stop a running browser task
+export async function stopBrowserTask(): Promise<void> {
+    await fetch(`${API_BASE}/stop/${getUserId()}`, { method: 'POST' });
+}
+
+// Answer a browser agent question (replaces the chat-based answer flow)
+export async function answerBrowserQuestion(answer: string): Promise<void> {
+    await fetch(`${API_BASE}/answer/${getUserId()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answer }),
+    });
 }

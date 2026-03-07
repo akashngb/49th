@@ -1,19 +1,28 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { 
-  FileText, 
-  CheckCircle2, 
-  Clock, 
-  ExternalLink, 
-  Download, 
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  FileText,
+  CheckCircle2,
+  Clock,
+  ExternalLink,
+  Download,
   AlertCircle,
   ChevronRight,
   Info
 } from 'lucide-react';
+import {
+  runBrowserTask,
+  getBrowserStatus,
+  pauseBrowserTask,
+  resumeBrowserTask,
+  stopBrowserTask,
+  answerBrowserQuestion
+} from '../api';
+import { BrowserTaskPanel, type BrowserPanel } from '../components/BrowserTaskPanel';
 
 const docs = [
   {
-    id: 'sin',
+    id: 'apply_for_sin',
     name: 'Social Insurance Number (SIN)',
     desc: 'Required for working in Canada and accessing government programs.',
     status: 'done',
@@ -22,7 +31,7 @@ const docs = [
     requirements: ['Primary ID (PR Card/Work Permit)', 'Secondary ID', 'Proof of Address']
   },
   {
-    id: 'health',
+    id: 'register_health_card',
     name: 'Provincial Health Card',
     desc: 'Covers essential medical services and hospital visits.',
     status: 'ready',
@@ -51,6 +60,67 @@ const docs = [
 ];
 
 export const Documents = () => {
+  const [panel, setPanel] = useState<BrowserPanel | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startPolling = () => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const status = await getBrowserStatus();
+        setPanel(prev => {
+          if (!prev) return prev;
+          if (status.result) {
+            clearInterval(pollRef.current!);
+            return { ...prev, state: 'done', result: status.result };
+          }
+          if (status.question && prev.state !== 'question') {
+            return { ...prev, state: 'question', question: status.question };
+          }
+          if (!status.active && prev.state !== 'question' && prev.state !== 'done') {
+            return { ...prev, state: 'running' };
+          }
+          return prev;
+        });
+      } catch { /* ignore */ }
+    }, 2000);
+  };
+
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
+
+  const handleExecute = async (doc: typeof docs[0]) => {
+    if (doc.status === 'locked' || doc.status === 'done') return;
+    setPanel({ taskId: doc.id, taskName: doc.name, state: 'idle' });
+    try {
+      await runBrowserTask(doc.id);
+      setPanel(prev => prev ? { ...prev, state: 'running' } : prev);
+      startPolling();
+    } catch (e) {
+      setPanel(prev => prev ? { ...prev, state: 'done', result: '⚠️ Could not start browser agent. Is the backend running?' } : prev);
+    }
+  };
+
+  const handlePause = async () => {
+    await pauseBrowserTask();
+    setPanel(prev => prev ? { ...prev, state: 'paused' } : prev);
+  };
+
+  const handleResume = async () => {
+    await resumeBrowserTask();
+    setPanel(prev => prev ? { ...prev, state: 'running' } : prev);
+  };
+
+  const handleStop = async () => {
+    await stopBrowserTask();
+    if (pollRef.current) clearInterval(pollRef.current);
+    setPanel(null);
+  };
+
+  const handleAnswer = async (answer: string) => {
+    await answerBrowserQuestion(answer);
+    setPanel(prev => prev ? { ...prev, state: 'running', question: undefined } : prev);
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-32">
       {/* Editorial Header */}
@@ -69,7 +139,7 @@ export const Documents = () => {
             <span className="italic text-terracotta text-5xl md:text-7xl">Archive.</span>
           </h1>
           <p className="text-xl text-charcoal/60 leading-relaxed font-light">
-            Your essential Canadian government documentation. 
+            Your essential Canadian government documentation.
             A curated architecture of identity and legal status.
           </p>
         </div>
@@ -84,30 +154,27 @@ export const Documents = () => {
         <div className="lg:col-span-8 space-y-24">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {docs.map((doc, i) => (
-              <motion.div 
+              <motion.div
                 key={doc.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -8, scale: 1.02 }}
-                className={`bg-white rounded-[3rem] border card-shadow overflow-hidden flex flex-col group transition-all duration-700 ${
-                  doc.status === 'done' ? 'border-mint' : 
-                  doc.status === 'ready' ? 'border-forest/20' : 
-                  'border-taupe opacity-60'
-                }`}
+                className={`bg-white rounded-[3rem] border card-shadow overflow-hidden flex flex-col group transition-all duration-700 ${doc.status === 'done' ? 'border-mint' :
+                  doc.status === 'ready' ? 'border-forest/20' :
+                    'border-taupe opacity-60'
+                  }`}
               >
                 <div className="p-10 flex-1">
                   <div className="flex items-start justify-between mb-10">
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 ${
-                      doc.status === 'done' ? 'bg-mint text-forest group-hover:bg-forest group-hover:text-white' : 'bg-cream text-charcoal/40 group-hover:bg-taupe/20'
-                    }`}>
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 ${doc.status === 'done' ? 'bg-mint text-forest group-hover:bg-forest group-hover:text-white' : 'bg-cream text-charcoal/40 group-hover:bg-taupe/20'
+                      }`}>
                       <FileText size={32} />
                     </div>
-                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                      doc.status === 'done' ? 'bg-mint text-forest' : 
-                      doc.status === 'ready' ? 'bg-terracotta/10 text-terracotta' : 
-                      'bg-taupe/20 text-charcoal/40'
-                    }`}>
+                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${doc.status === 'done' ? 'bg-mint text-forest' :
+                      doc.status === 'ready' ? 'bg-terracotta/10 text-terracotta' :
+                        'bg-taupe/20 text-charcoal/40'
+                      }`}>
                       {doc.status === 'done' ? 'Completed' : doc.status === 'ready' ? 'Action Required' : 'Locked'}
                     </div>
                   </div>
@@ -144,11 +211,13 @@ export const Documents = () => {
                   <button className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-forest hover:underline">
                     Detailed guide <ChevronRight size={14} />
                   </button>
-                  <button className={`px-8 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all duration-500 shadow-lg ${
-                    doc.status === 'done' ? 'bg-white text-forest border border-mint shadow-mint/10' : 
-                    doc.status === 'ready' ? 'bg-forest text-white hover:bg-forest/90 shadow-forest/20' : 
-                    'bg-taupe/20 text-charcoal/40 cursor-not-allowed shadow-none'
-                  }`}>
+                  <button
+                    onClick={() => handleExecute(doc)}
+                    disabled={doc.status === 'locked' || doc.status === 'done'}
+                    className={`px-8 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all duration-500 shadow-lg ${doc.status === 'done' ? 'bg-white text-forest border border-mint shadow-mint/10' :
+                      doc.status === 'ready' ? 'bg-forest text-white hover:bg-forest/90 shadow-forest/20' :
+                        'bg-taupe/20 text-charcoal/40 cursor-not-allowed shadow-none'
+                      }`}>
                     {doc.status === 'done' ? 'View Document' : 'Apply Now'}
                   </button>
                 </div>
@@ -197,6 +266,20 @@ export const Documents = () => {
           </div>
         </div>
       </div>
+
+      {/* Floating Browser Task Panel */}
+      <AnimatePresence>
+        {panel && (
+          <BrowserTaskPanel
+            panel={panel}
+            onClose={() => setPanel(null)}
+            onPause={handlePause}
+            onResume={handleResume}
+            onStop={handleStop}
+            onAnswer={handleAnswer}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
