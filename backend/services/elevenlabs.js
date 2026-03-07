@@ -52,7 +52,8 @@ async function transcribeVoiceNote(mediaUrl) {
             file: fs.createReadStream(tmpFile),
             model_id: 'scribe_v1'
         });
-        return transcript.text;
+        // Return both the text and the detected language code (e.g. "ar", "ur", "fr")
+        return { text: transcript.text, language: transcript.language_code || 'en' };
     } finally {
         // Cleanup temp file
         fs.unlink(tmpFile, () => { });

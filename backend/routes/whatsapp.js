@@ -12,6 +12,7 @@ router.post('/', async (req, res) => {
 
   try {
     let messageText;
+    let detectedLanguage = null;
 
     if (isVoiceNote) {
       // User sent a voice note — transcribe it first
@@ -19,14 +20,22 @@ router.post('/', async (req, res) => {
       console.log(`🎙️ Voice note from ${from}, transcribing...`);
 
       const { transcribeVoiceNote } = require('../services/elevenlabs');
-      messageText = await transcribeVoiceNote(mediaUrl);
-      console.log(`📝 Transcribed: "${messageText}"`);
+      const result = await transcribeVoiceNote(mediaUrl);
+      detectedLanguage = result.language;
+      messageText = result.text;
+      console.log(`📝 Transcribed (${detectedLanguage}): "${messageText}"`);
     } else {
       // Plain text message
       messageText = req.body.Body;
     }
 
-    const response = await coordinator.handle(from, messageText);
+    // If a language was detected from a voice note, prefix it so the LLM
+    // knows explicitly which language to reply in
+    const coordinatorInput = detectedLanguage && detectedLanguage !== 'en'
+      ? `[User language: ${detectedLanguage}] ${messageText}`
+      : messageText;
+
+    const response = await coordinator.handle(from, coordinatorInput);
     console.log('--- RESPONSE TO', from, '---');
     console.log(response);
     console.log('------------------------');
