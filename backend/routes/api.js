@@ -157,4 +157,20 @@ router.post('/status', (req, res) => {
   }
 });
 
+// POST /api/user/link-phone — store a user's WhatsApp phone number
+router.post('/user/link-phone', (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+    if (!phoneNumber) {
+      return res.status(400).json({ error: 'phoneNumber is required' });
+    }
+    // TODO: persist to database — for now acknowledge success
+    console.log(`📱 Linked WhatsApp number: ${phoneNumber}`);
+    res.json({ success: true, phoneNumber });
+  } catch (err) {
+    console.error('Link phone error:', err.message);
+    res.status(500).json({ error: 'Failed to link phone number' });
+  }
+});
+
 module.exports = router;
