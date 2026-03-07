@@ -15,10 +15,10 @@ router.post('/', async (req, res) => {
     console.log('------------------------');
 
     // Only send via Twilio if credentials exist
-    if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-      const { sendWhatsAppMessage } = require('../services/twilio');
-      await sendWhatsAppMessage(from, response);
-    }
+    // if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    //   const { sendWhatsAppMessage } = require('../services/twilio');
+    //   await sendWhatsAppMessage(from, response);
+    // }
   } catch (err) {
     console.error('Handler error:', err);
   }
