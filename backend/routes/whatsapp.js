@@ -126,7 +126,6 @@ router.post('/', async (req, res) => {
       console.log('🎵 TTS available at:', audioMediaUrl);
     }
 
-    // Only send via Twilio if credentials exist
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
       const { sendWhatsAppMessage } = require('../services/twilio');
       // Prefer audio reply > image graphic > plain text
