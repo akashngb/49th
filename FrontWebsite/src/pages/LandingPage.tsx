@@ -33,11 +33,13 @@ export const LandingPage = () => {
 
       {/* Navigation */}
       <nav className="relative z-10 max-w-[1400px] mx-auto px-8 py-8 flex items-center justify-between border-b border-ink">
-        <div className="flex items-center gap-4">
-          <Logo className="w-10 h-10" />
-          <div className="flex flex-col">
-            <span className="font-serif font-bold text-2xl text-forest leading-none">49th</span>
-            <span className="text-[9px] uppercase tracking-[0.2em] text-charcoal/40 font-bold">Immigration Companion</span>
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-6">
+            <Logo className="w-16 h-16 md:w-24 md:h-24" />
+            <div className="flex flex-col">
+              <span className="font-serif font-bold text-3xl md:text-5xl text-forest leading-none">49th</span>
+              <span className="text-[10px] md:text-xs uppercase tracking-[0.2em] text-charcoal/40 font-bold mt-1">Immigration Companion</span>
+            </div>
           </div>
         </div>
         <div className="hidden md:flex items-center gap-12 text-[10px] uppercase tracking-widest font-bold text-charcoal/60">
@@ -344,9 +346,9 @@ export const LandingPage = () => {
         <div className="max-w-[1400px] mx-auto px-8">
           <div className="flex flex-col md:flex-row items-start justify-between gap-16 mb-20">
             <div className="flex flex-col gap-6">
-              <div className="flex items-center gap-3">
-                <Logo className="w-12 h-12" />
-                <span className="font-serif font-bold text-3xl text-forest">49th</span>
+              <div className="flex items-center gap-6">
+                <Logo className="w-20 h-20 md:w-28 md:h-28" />
+                <span className="font-serif font-bold text-4xl md:text-6xl text-forest">49th</span>
               </div>
               <p className="text-charcoal/40 max-w-xs text-sm font-medium leading-relaxed">
                 A curated intelligence companion for the modern newcomer. Built with care in Toronto.

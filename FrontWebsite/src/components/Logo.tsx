@@ -1,41 +1,28 @@
 import React from 'react';
 import { cn } from '../lib/utils';
 
-export const Logo: React.FC<{ className?: string }> = ({ className = "w-12 h-12" }) => {
+export const Logo: React.FC<{ className?: string }> = ({ className = "w-16 h-16" }) => {
   return (
     <div className={cn(
-      className, 
-      "bg-forest rounded-2xl flex items-center justify-center text-white overflow-hidden relative shadow-2xl shadow-forest/20 border border-white/10 group"
+      className,
+      "flex items-center justify-center shrink-0 relative drop-shadow-sm"
     )}>
-      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-      <img 
-        src="/input_file_0.png" 
-        alt="49th Logo" 
-        className="w-full h-full object-cover relative z-10"
-        referrerPolicy="no-referrer"
+      <img
+        src="/logo.png"
+        alt="49th Protocol Logo"
+        className="w-full h-full object-contain"
         onError={(e) => {
+          // Fallback if logo.png is missing or not yet saved by the user
           e.currentTarget.style.display = 'none';
+          const parent = e.currentTarget.parentElement;
+          if (parent && !parent.querySelector('.fallback-text')) {
+            const fallback = document.createElement('div');
+            fallback.className = 'fallback-text w-full h-full bg-forest rounded-full flex items-center justify-center text-white font-bold font-serif shadow-lg border-2 border-mint';
+            fallback.innerText = '49';
+            parent.appendChild(fallback);
+          }
         }}
       />
-      {/* Custom SVG mimicking the provided logo as fallback */}
-      <svg viewBox="0 0 100 100" className="w-full h-full p-2 absolute inset-0 pointer-events-none z-0">
-        {/* Pin Shape */}
-        <path 
-          d="M50 10 C30 10 15 25 15 45 C15 65 50 90 50 90 C50 90 85 65 85 45 C85 25 70 10 50 10 Z" 
-          fill="white" 
-          className="opacity-10"
-        />
-        {/* Maple Leaf */}
-        <path 
-          d="M50 25 L53 35 L63 32 L60 42 L70 45 L60 48 L63 58 L53 55 L50 65 L47 55 L37 58 L40 48 L30 45 L40 42 L37 32 L47 35 Z" 
-          fill="#B7472A" 
-          className="drop-shadow-lg"
-        />
-        {/* Road/Path */}
-        <path d="M40 90 L50 65 L60 90" fill="none" stroke="white" strokeWidth="2" className="opacity-40" />
-        {/* Text */}
-        <text x="50" y="82" textAnchor="middle" fontSize="12" fontWeight="900" fill="white" fontFamily="serif" className="tracking-tighter opacity-80">49th</text>
-      </svg>
     </div>
   );
 };

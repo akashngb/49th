@@ -35,12 +35,12 @@ const navItems = [
 export const Sidebar = () => {
   return (
     <aside className="w-80 h-screen bg-white border-r border-ink flex flex-col sticky top-0 relative overflow-hidden grain shadow-2xl shadow-black/5">
-      <div className="p-10 border-b border-ink relative z-10 bg-cream/30">
-        <div className="flex items-center gap-4">
-          <Logo className="w-12 h-12" />
+      <div className="p-8 border-b border-ink relative z-10 bg-cream/30">
+        <div className="flex items-center gap-5">
+          <Logo className="w-20 h-20" />
           <div className="flex flex-col">
-            <span className="font-serif font-bold text-3xl text-forest leading-none tracking-tighter">49th</span>
-            <span className="text-[9px] uppercase tracking-[0.4em] text-charcoal/30 font-bold">Protocol Engine</span>
+            <span className="font-serif font-bold text-4xl text-forest leading-none tracking-tighter">49th</span>
+            <span className="text-[10px] uppercase tracking-[0.4em] text-charcoal/30 font-bold mt-1">Protocol Engine</span>
           </div>
         </div>
       </div>
