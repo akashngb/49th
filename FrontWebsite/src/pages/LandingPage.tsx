@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { useAuth0 } from '@auth0/auth0-react';
 import {
   ArrowRight,
   Sparkles,
@@ -17,10 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 
 export const LandingPage = () => {
-  const { loginWithRedirect } = useAuth0();
-  const startJourney = () => loginWithRedirect({
-    authorizationParams: { redirect_uri: window.location.origin + '/phone-link' }
-  });
+  const navigate = useNavigate();
+  const startJourney = () => navigate('/login');
 
   return (
     <div className="min-h-screen bg-cream relative overflow-hidden">
