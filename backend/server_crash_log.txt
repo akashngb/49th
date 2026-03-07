@@ -1,0 +1,33 @@
+[dotenv@17.3.1] injecting env (4) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+Roots backend running on 3001
+Backboard Assistant: {
+  name: 'Roots AI Assistant',
+  description: 'You are Roots, a warm and knowledgeable AI companion for newcomers to Canada. You help immigrants navigate settlement, from documents and healthcare to career and community. Be concise, practical, and empathetic. Use bullet points for action items.',
+  system_prompt: 'You are Roots, a warm and knowledgeable AI companion for newcomers to Canada. You help immigrants navigate settlement, from documents and healthcare to career and community. Be concise, practical, and empathetic. Use bullet points for action items.',
+  tools: null,
+  tok_k: 10,
+  embedding_provider: 'openai',
+  embedding_model_name: 'text-embedding-3-large',
+  embedding_dims: 3072,
+  assistant_id: '52b40f94-67db-4c12-a53c-8467e8770708',
+  created_at: '2026-03-07T14:26:02'
+}
+Backboard Thread: {
+  metadata_: null,
+  thread_id: 'da8f206e-5db3-4ca2-a98a-a4d43eff7cf7',
+  created_at: '2026-03-07T15:01:31',
+  messages: []
+}
+Backboard Thread: {
+  metadata_: null,
+  thread_id: '865fbe6b-04de-46b0-9c99-851ce0bb7d45',
+  created_at: '2026-03-07T15:16:11',
+  messages: []
+}
+Onboard API error: Request failed with status code 404
+Backboard Thread: {
+  metadata_: null,
+  thread_id: 'fd2d1203-bb18-4493-b599-9526816f208f',
+  created_at: '2026-03-07T15:19:22',
+  messages: []
+}
