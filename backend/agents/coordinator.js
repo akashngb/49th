@@ -6,11 +6,16 @@ const { chat, saveUserProfile, loadUserData } = require('../services/backboard')
 const sessions = {};
 
 const ONBOARDING_QUESTIONS = [
+  "Which country are you originally from?",
+  "What language do you prefer to communicate in? (e.g. English, French, Spanish, Hindi, Urdu, Tagalog, Ukrainian)",
+  "Which province are you settling in? (e.g. Ontario, British Columbia, Alberta, Quebec)",
   "Which city did you land in?",
-  "What is your immigration status? (e.g. study permit, work permit, PR, visitor)",
-  "What do you do professionally?",
-  "Do you have family with you, or are you arriving alone?",
-  "What are you most worried about right now?"
+  "When did you arrive in Canada? (e.g. January 2025)",
+  "What is your immigration status? (e.g. Permanent Resident, Work Permit, Study Permit, Refugee Claimant, Citizen)",
+  "What is your profession?",
+  "What is your highest level of education? (e.g. High School, Bachelor's, Master's, PhD, Trade Certificate)",
+  "What is your marital status, and do you have children with you? (e.g. Single, Married with 2 kids)",
+  "What is your biggest concern right now as you settle in Canada?"
 ];
 
 const ROOTS_SYSTEM_PROMPT = `You are Roots 🌱, a warm and knowledgeable AI companion for newcomers to Canada built by 49th. You help immigrants navigate settlement — documents, healthcare, SIN, OHIP, banking, career, and community.
@@ -85,13 +90,18 @@ async function handle(userId, message) {
       questions: ONBOARDING_QUESTIONS
     };
 
-    // Persist profile + stage to disk so it survives restarts
+    // Persist full profile to disk so it survives restarts
     const profileForDisk = {
-      city: session.answers[0],
-      status: session.answers[1],
-      profession: session.answers[2],
-      family: session.answers[3],
-      concern: session.answers[4]
+      country: session.answers[0],
+      language: session.answers[1],
+      province: session.answers[2],
+      city: session.answers[3],
+      arrivalDate: session.answers[4],
+      status: session.answers[5],
+      profession: session.answers[6],
+      education: session.answers[7],
+      family: session.answers[8],
+      concern: session.answers[9]
     };
     saveUserProfile(userId, profileForDisk, 'active');
 
