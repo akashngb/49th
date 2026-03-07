@@ -1,81 +1,105 @@
+const fs = require('fs');
+const path = require('path');
 const { generateCriticalPath } = require('../services/gemini');
 const { formatStatusMessage } = require('../services/statusTracker');
+const { createThread, sendMessage } = require('../services/backboard');
 
-const sessions = {};
+// Path to persistent thread map
+const THREAD_MAP_FILE = path.join(__dirname, '..', 'data', 'thread_map.json');
 
-const ONBOARDING_QUESTIONS = [
-  "Which city did you land in?",
-  "What is your immigration status? (e.g. study permit, work permit, PR, visitor)",
-  "What do you do professionally?",
-  "Do you have family with you, or are you arriving alone?",
-  "What are you most worried about right now?"
-];
-
-async function handle(userId, message) {
-  if (!sessions[userId]) {
-    sessions[userId] = {
-      stage: 'onboarding',
-      questionIndex: 0,
-      profile: {},
-      answers: []
-    };
-    return "Welcome to Roots 🌱\n\nI help newcomers to Canada figure out exactly what to do — and in what order. Let's start with a few quick questions.\n\nFirst: where did you arrive from, and when did you land in Canada?";
+// Memory map: WhatsApp Number -> Backboard Thread ID
+let threadMap = {};
+if (fs.existsSync(THREAD_MAP_FILE)) {
+  try {
+    threadMap = JSON.parse(fs.readFileSync(THREAD_MAP_FILE, 'utf-8'));
+  } catch (error) {
+    console.error('Failed to parse thread_map.json, initializing empty map.');
+    threadMap = {};
   }
-
-  const session = sessions[userId];
-
-  // STATUS flow
-  if (message.trim().toUpperCase() === 'STATUS') {
-    session.stage = 'status_q1';
-    return "To check your application timeline, what type of application did you submit?\n\n(e.g. PR - Express Entry, Work Permit, Study Permit, PR - Spousal)";
-  }
-
-  if (session.stage === 'status_q1') {
-    session.statusType = message;
-    session.stage = 'status_q2';
-    return "How many months ago did you submit your application?";
-  }
-
-  if (session.stage === 'status_q2') {
-    const months = parseInt(message);
-    session.stage = 'active';
-    return formatStatusMessage(session.statusType, months);
-  }
-
-  // ONBOARDING flow
-  if (session.stage === 'onboarding') {
-    session.answers.push(message);
-    session.questionIndex++;
-
-    if (session.questionIndex < ONBOARDING_QUESTIONS.length) {
-      return ONBOARDING_QUESTIONS[session.questionIndex];
-    }
-
-    // All questions answered — generate critical path
-    session.stage = 'active';
-    session.profile = {
-      answers: session.answers,
-      questions: ONBOARDING_QUESTIONS
-    };
-
-    try {
-      const path = await generateCriticalPath(session.profile);
-      const tasks = path.tasks.slice(0, 5);
-      let response = "Here's your critical path for the next 90 days 🗺️\n\n";
-      tasks.forEach((task, i) => {
-        const emoji = task.urgency === 'critical' ? '🔴' : task.urgency === 'high' ? '🟡' : '🟢';
-        response += `${emoji} *${i + 1}. ${task.title}*\n${task.description}\n⏱ ${task.estimatedTime}\n\n`;
-      });
-      response += "Reply with any question, or type *STATUS* to check your application timeline.";
-      return response;
-    } catch (err) {
-      console.error('Gemini error:', err);
-      return `Here's your critical path for the next 90 days 🗺️\n\n🔴 *1. Apply for your SIN*\nRequired before you can work legally in Canada.\n⏱ 2-3 hours\n\n🔴 *2. Open a Canadian bank account*\nNeeded for direct deposit and building credit.\n⏱ 1-2 hours\n\n🟡 *3. Get private health insurance*\nYou have a 90-day wait for OHIP. Get bridging coverage now.\n⏱ 30 minutes\n\n🟡 *4. Apply for your Ontario Health Card (OHIP)*\nBook this appointment now — the wait is real.\n⏱ 2 hours\n\n🟢 *5. Apply for a secured credit card*\nStart building Canadian credit history immediately.\n⏱ 30 minutes\n\nReply with any question, or type *STATUS* to check your application timeline.`;
-    }
-  }
-
-  // ACTIVE — general responses
-  return "I'm here to help. You can type *STATUS* to check your application timeline, or just ask me anything about settling in Canada 🌱";
 }
 
-module.exports = { handle };
+// Ensure data dir exists
+if (!fs.existsSync(path.dirname(THREAD_MAP_FILE))) {
+  fs.mkdirSync(path.dirname(THREAD_MAP_FILE), { recursive: true });
+}
+
+function saveThreadMap() {
+  fs.writeFileSync(THREAD_MAP_FILE, JSON.stringify(threadMap, null, 2));
+}
+
+// Assistant ID will be injected dynamically from index.js upon startup
+let backboardAssistantId = null;
+
+function setAssistantId(id) {
+  backboardAssistantId = id;
+}
+
+async function handle(userId, message) {
+  if (!backboardAssistantId) {
+    console.warn('Backboard Assistant ID not set.');
+    return "I'm still waking up 🌱 Please give me a few seconds and try again.";
+  }
+
+  // 1. Get or create a thread for this user
+  let threadId = threadMap[userId];
+  if (!threadId) {
+    console.log(`Creating new Backboard thread for user ${userId}...`);
+    try {
+      threadId = await createThread(backboardAssistantId);
+      threadMap[userId] = threadId;
+      saveThreadMap();
+    } catch (error) {
+      return "Sorry, I am having trouble starting our chat right now. Please try again later. 🌱";
+    }
+  }
+
+  // 2. Send the message to Backboard
+  try {
+    const rawReply = await sendMessage(threadId, message);
+    const textReply = rawReply.content;
+
+    // 3. Intercept trigger payloads from Backboard LLM
+    try {
+      // The assistant might return raw string JSON if it hit a trigger
+      const maybeJsonStr = textReply.trim();
+      if (maybeJsonStr.startsWith('{') && maybeJsonStr.endsWith('}')) {
+        const payload = JSON.parse(maybeJsonStr);
+
+        // Handle trigger: GENERATE_CRITICAL_PATH
+        if (payload.trigger === 'GENERATE_CRITICAL_PATH' && payload.profile) {
+          try {
+            const pathObj = await generateCriticalPath({ answers: Object.values(payload.profile) });
+            const tasks = pathObj.tasks.slice(0, 5);
+            let generatedText = "Here's your critical path for the next 90 days 🗺️\n\n";
+            tasks.forEach((task, i) => {
+              const emoji = task.urgency === 'critical' ? '🔴' : task.urgency === 'high' ? '🟡' : '🟢';
+              generatedText += `${emoji} *${i + 1}. ${task.title}*\n${task.description}\n⏱ ${task.estimatedTime}\n\n`;
+            });
+            generatedText += "Reply with any question, or type *STATUS* to check your application timeline.";
+            return generatedText;
+          } catch (err) {
+            console.error('Gemini error during critical path:', err);
+            return `Here's your critical path for the next 90 days 🗺️\n\n🔴 *1. Apply for your SIN*\nRequired before you can work legally in Canada.\n⏱ 2-3 hours\n\n🔴 *2. Open a Canadian bank account*\nNeeded for direct deposit and building credit.\n⏱ 1-2 hours\n\n🟡 *3. Get private health insurance*\nYou have a 90-day wait for OHIP. Get bridging coverage now.\n⏱ 30 minutes\n\n🟡 *4. Apply for your Ontario Health Card (OHIP)*\nBook this appointment now — the wait is real.\n⏱ 2 hours\n\n🟢 *5. Apply for a secured credit card*\nStart building Canadian credit history immediately.\n⏱ 30 minutes\n\nReply with any question, or type *STATUS* to check your application timeline.`;
+          }
+        }
+
+        // Handle trigger: CHECK_STATUS
+        if (payload.trigger === 'CHECK_STATUS' && payload.type && payload.months !== undefined) {
+          return formatStatusMessage(payload.type, payload.months);
+        }
+      }
+    } catch (parseError) {
+      // If parsing fails, it just means it was a normal sentence, not our tool payload.
+      // We fall down to returning the text directly.
+    }
+
+    // 4. If no triggers hit, safely return the Backboard reply
+    return textReply;
+
+  } catch (error) {
+    console.error('Error handling backboard thread response:', error);
+    return "I had a bit of trouble understanding that. Could you try asking me again?";
+  }
+}
+
+module.exports = { handle, setAssistantId };
