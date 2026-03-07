@@ -156,7 +156,7 @@ export const LandingPage = () => {
       </section>
 
       {/* Why this matters - Asymmetrical Editorial */}
-      <section className="bg-white py-32 relative overflow-hidden">
+      <section id="features" className="bg-white py-32 relative overflow-hidden">
         <div className="max-w-[1400px] mx-auto px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
             <div className="relative">
@@ -356,9 +356,9 @@ export const LandingPage = () => {
               <div className="space-y-6">
                 <p className="text-[10px] uppercase tracking-widest text-charcoal/30 font-bold">Platform</p>
                 <div className="flex flex-col gap-4 text-sm font-bold text-charcoal/60">
-                  <a href="#" className="hover:text-forest">Methodology</a>
-                  <a href="#" className="hover:text-forest">Modules</a>
-                  <a href="#" className="hover:text-forest">Archive</a>
+                  <a href="#how-it-works" className="hover:text-forest">Methodology</a>
+                  <a href="#features" className="hover:text-forest">Modules</a>
+                  <a href="#stories" className="hover:text-forest">Archive</a>
                 </div>
               </div>
               <div className="space-y-6">
