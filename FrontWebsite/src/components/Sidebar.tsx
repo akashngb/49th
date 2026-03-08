@@ -1,10 +1,6 @@
 import React from 'react';
-<<<<<<< HEAD
-import { NavLink } from 'react-router-dom';
-import { useRootsUser } from '../hooks/useRootsUser';
-=======
 import { NavLink, useNavigate } from 'react-router-dom';
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
+import { useRootsUser } from '../hooks/useRootsUser';
 import {
   LayoutDashboard,
   Map,
@@ -27,10 +23,8 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export const Sidebar = () => {
-<<<<<<< HEAD
-  const { displayName, picture, logout, role, isFamily } = useRootsUser();
-=======
   const navigate = useNavigate();
+  const { displayName, picture, logout, role, isFamily } = useRootsUser();
   const { t } = useApp();
 
   const navItems = [
@@ -43,8 +37,6 @@ export const Sidebar = () => {
     { icon: Users, label: t.community, path: '/dashboard/community' },
     { icon: MessageSquare, label: t.messages, path: '/dashboard/messages' },
   ];
-
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
   return (
     <aside className="w-72 h-screen bg-white border-r border-ink flex flex-col sticky top-0 relative overflow-hidden grain shadow-2xl shadow-black/5">
       <div className="px-6 py-5 border-b border-ink relative z-10 bg-cream/30">
@@ -98,19 +90,18 @@ export const Sidebar = () => {
           <p className="text-[9px] text-charcoal/40 leading-relaxed font-medium">You are currently in the <span className="text-forest font-bold italic">Arrival Protocol</span> phase.</p>
         </div>
 
-<<<<<<< HEAD
         {/* User identity strip */}
         <div className="px-2 mb-4 flex items-center gap-4">
           {picture
             ? <img src={picture} className="w-10 h-10 rounded-full border border-ink" />
-            : <div className="w-10 h-10 rounded-full bg-forest flex items-center justify-center text-cream font-serif font-bold">{displayName[0]}</div>
+            : <div className="w-10 h-10 rounded-full bg-forest flex items-center justify-center text-cream font-serif font-bold">{displayName ? displayName[0] : 'U'}</div>
           }
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-bold text-charcoal truncate">{displayName}</span>
               <span className={`text-[8px] uppercase tracking-[0.2em] font-bold px-2 py-0.5 rounded-full ${isFamily
-                  ? 'bg-taupe/40 text-charcoal/40'
-                  : 'bg-mint text-forest'
+                ? 'bg-taupe/40 text-charcoal/40'
+                : 'bg-mint text-forest'
                 }`}>
                 {role}
               </span>
@@ -120,9 +111,6 @@ export const Sidebar = () => {
         </div>
 
         <div className="mt-6 flex gap-2">
-=======
-        <div className="mt-4 flex gap-2">
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
           <NavLink
             to="/dashboard/settings"
             className={({ isActive }) => cn(
@@ -133,13 +121,8 @@ export const Sidebar = () => {
             <Settings size={20} />
           </NavLink>
           <button
-<<<<<<< HEAD
             onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
             className="flex-1 flex items-center justify-center p-4 rounded-2xl border border-ink bg-white text-terracotta hover:bg-terracotta hover:text-white transition-all duration-300"
-=======
-            onClick={() => navigate('/')}
-            className="flex-1 flex items-center justify-center p-4 rounded-xl border border-ink bg-white text-terracotta hover:bg-terracotta hover:text-white transition-all duration-300"
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
           >
             <LogOut size={20} />
           </button>

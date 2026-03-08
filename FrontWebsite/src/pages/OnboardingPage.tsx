@@ -255,18 +255,13 @@ export const OnboardingPage = () => {
               </>
             )}
           </div>
-<<<<<<< HEAD
-
           <button
             onClick={handleEnterDashboard}
             className="w-full py-8 bg-forest text-white rounded text-[10px] font-bold uppercase tracking-[0.4em] hover:bg-forest/90 transition-all shadow-2xl shadow-forest/30 flex items-center justify-center gap-6 group"
           >
             Enter your dashboard <ArrowRight size={24} className="group-hover:translate-x-4 transition-transform" />
           </button>
-        </motion.div>
-=======
         </div>
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
       </div>
     );
   }

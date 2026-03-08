@@ -98,7 +98,6 @@ export const ArrivalEngine = () => {
 
   return (
     <>
-<<<<<<< HEAD
       <div className="p-12 max-w-7xl mx-auto space-y-32 min-h-screen">
         {isFamily && (
           <div className="mb-8 px-8 py-5 bg-mint/40 border border-forest/20 rounded-2xl flex items-center gap-4">
@@ -108,10 +107,6 @@ export const ArrivalEngine = () => {
             </p>
           </div>
         )}
-
-=======
-      <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-20 min-h-screen">
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
         {/* Header */}
         <section className="flex flex-col md:flex-row md:items-end justify-between gap-10 border-b border-ink pb-12">
           <div className="max-w-2xl">
@@ -206,7 +201,6 @@ export const ArrivalEngine = () => {
 
                     <div className="flex flex-wrap items-center gap-6 pt-2">
                       {/* Main action button */}
-<<<<<<< HEAD
                       <RoleProtectedAction>
                         <button
                           onClick={() => handleExecute(task)}
@@ -227,26 +221,6 @@ export const ArrivalEngine = () => {
                           )}
                         </button>
                       </RoleProtectedAction>
-=======
-                      <button
-                        onClick={() => handleExecute(task)}
-                        disabled={task.status === 'locked' || task.status === 'done'}
-                        className={`px-8 py-4 rounded-sm font-bold text-[10px] transition-all uppercase tracking-widest flex items-center gap-2 ${task.status === 'done'
-                          ? 'bg-mint text-forest cursor-default border border-forest/10'
-                          : task.status === 'ready'
-                            ? 'bg-forest text-cream hover:bg-forest/90 shadow-sm hover:shadow-md'
-                            : 'bg-cream text-charcoal/30 cursor-not-allowed border border-ink'
-                          }`}
-                      >
-                        {task.status === 'done' ? (
-                          <>Protocol Completed</>
-                        ) : task.status === 'ready' ? (
-                          <><Bot size={14} /> Execute with Nanoclaw</>
-                        ) : (
-                          <>Node Locked</>
-                        )}
-                      </button>
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
 
                       {task.status === 'ready' && task.requirementsUrl && (
                         <button

@@ -35,7 +35,7 @@ const data = [
 ];
 
 export const Overview = () => {
-<<<<<<< HEAD
+  const navigate = useNavigate();
   const { displayName, city, auth0UserId, criticalPathProgress, sinObtained, ohipRegistered } = useRootsUser();
   const [profile, setProfile] = useState<any>(null);
 
@@ -48,9 +48,6 @@ export const Overview = () => {
   const resolvedCity = city || profile?.city || 'Canada';
   const resolvedProgress = criticalPathProgress || profile?.critical_path_progress || 0;
   const progressPercent = Math.min(Math.round((resolvedProgress / 10) * 100), 100);
-=======
-  const navigate = useNavigate();
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
 
   return (
     <div className="p-8 md:p-10 space-y-8 relative min-h-screen max-w-[1600px] mx-auto">
@@ -63,11 +60,7 @@ export const Overview = () => {
           </div>
           <h1 className="text-5xl md:text-6xl font-serif font-bold text-forest mb-4 leading-tight tracking-tight">
             Welcome home, <br />
-<<<<<<< HEAD
             <span className="italic text-terracotta skew-x-[-10deg] inline-block">{displayName.split(' ')[0]}.</span>
-=======
-            <span className="italic text-terracotta inline-block">Jiapei.</span>
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
           </h1>
           <p className="text-lg md:text-xl text-charcoal/60 max-w-xl font-light leading-relaxed">
             You've been in Toronto for 12 days. The system is currently optimizing your <span className="text-forest font-medium italic">Arrival Roadmap</span> for local integration.
@@ -75,13 +68,8 @@ export const Overview = () => {
         </div>
         <div className="flex flex-col items-end gap-4">
           <div className="text-right">
-<<<<<<< HEAD
             <p className="text-[10px] font-bold text-charcoal/30 uppercase tracking-[0.4em] mb-2">Current Node</p>
             <p className="font-serif text-4xl font-bold text-forest">{resolvedCity}</p>
-=======
-            <p className="text-[10px] font-bold text-charcoal/40 uppercase tracking-widest mb-1">Current Node</p>
-            <p className="font-serif text-3xl font-medium text-forest">Toronto, ON</p>
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
           </div>
           <div className="px-5 py-2 bg-white border border-ink flex items-center gap-3 shadow-sm">
             <div className="w-2 h-2 rounded-full bg-forest" />
@@ -100,7 +88,6 @@ export const Overview = () => {
             </p>
             <span className="text-[10px] font-mono text-charcoal/30">01</span>
           </div>
-<<<<<<< HEAD
           <div className="flex items-baseline gap-3 mb-4">
             <span className="text-6xl font-serif font-bold text-charcoal">{resolvedProgress}</span>
             <span className="text-2xl font-serif text-charcoal/20">/ 10</span>
@@ -108,15 +95,6 @@ export const Overview = () => {
           <p className="text-xs text-charcoal/40 font-medium uppercase tracking-widest">Tasks completed</p>
           <div className="mt-10 w-full bg-taupe/20 h-1.5 rounded-full overflow-hidden">
             <div className="bg-forest h-full transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
-=======
-          <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-5xl font-serif font-medium text-charcoal">12</span>
-            <span className="text-xl font-serif text-charcoal/30">/ 28</span>
-          </div>
-          <p className="text-xs text-charcoal/50 font-medium">Tasks completed</p>
-          <div className="mt-8 w-full bg-charcoal/5 h-1.5 overflow-hidden">
-            <div className="bg-forest h-full w-[42%] transition-all duration-1000" />
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
           </div>
         </div>
 

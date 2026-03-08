@@ -1,13 +1,13 @@
-import { 
-  CheckCircle2, 
-  Clock, 
-  Lock, 
-  FileText, 
-  Stethoscope, 
-  GraduationCap, 
-  Briefcase, 
-  Users, 
-  TrendingUp, 
+import {
+  CheckCircle2,
+  Clock,
+  Lock,
+  FileText,
+  Stethoscope,
+  GraduationCap,
+  Briefcase,
+  Users,
+  TrendingUp,
   CreditCard,
   Home,
   Heart,
@@ -26,6 +26,7 @@ export interface SettlementTask {
   unlocks: string;
   category: 'documents' | 'finance' | 'health' | 'education' | 'career' | 'housing';
   icon: any;
+  requirementsUrl?: string;
 }
 
 export const SETTLEMENT_TASKS: SettlementTask[] = [

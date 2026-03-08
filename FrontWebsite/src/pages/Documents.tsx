@@ -8,7 +8,7 @@ import {
   AlertCircle,
   ChevronRight
 } from 'lucide-react';
-<<<<<<< HEAD
+import { useState, useRef } from 'react';
 import {
   runBrowserTask,
   getBrowserStatus,
@@ -27,8 +27,6 @@ import { autoGravity } from '@cloudinary/url-gen/qualifiers/gravity';
 import { cld } from '../cloudinary/config';
 import { UploadWidget } from '../cloudinary/UploadWidget';
 import type { CloudinaryUploadResult } from '../cloudinary/UploadWidget';
-=======
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
 
 const docs = [
   {
@@ -70,7 +68,7 @@ const docs = [
 ];
 
 export const Documents = () => {
-<<<<<<< HEAD
+  const navigate = useNavigate();
   const [panel, setPanel] = useState<BrowserPanel | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [uploadedImageId, setUploadedImageId] = useState<string | null>(null);
@@ -90,9 +88,6 @@ export const Documents = () => {
     .resize(fill().width(400).height(300).gravity(autoGravity()))
     .delivery(format(auto()))
     .delivery(quality(autoQuality()));
-=======
-  const navigate = useNavigate();
->>>>>>> d26bd58295af0a4e02df15cfacdb32076488edd7
 
   const handleExecute = (doc: typeof docs[0]) => {
     if (doc.status === 'locked' || doc.status === 'done') return;
