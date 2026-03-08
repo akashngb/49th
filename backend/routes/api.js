@@ -287,5 +287,20 @@ router.post('/user/update-task', async (req, res) => {
   }
 });
 
+// POST /api/user/unblock — restore a blocked Auth0 account from the dashboard
+router.post('/user/unblock', async (req, res) => {
+  try {
+    const { auth0UserId } = req.body;
+    if (!auth0UserId) {
+      return res.status(400).json({ error: 'auth0UserId is required' });
+    }
+    await auth0Manager.unblockUser(auth0UserId);
+    res.json({ success: true, message: 'Account restored successfully' });
+  } catch (err) {
+    console.error('Unblock error:', err.message);
+    res.status(500).json({ error: 'Failed to restore account' });
+  }
+});
+
 module.exports = router;
 

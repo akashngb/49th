@@ -36,4 +36,16 @@ async function linkWhatsAppNumber(auth0UserId, phoneNumber) {
     return updateProfileField(auth0UserId, 'phone_number', phoneNumber);
 }
 
-module.exports = { updateSettlementProfile, getSettlementProfile, updateProfileField, linkWhatsAppNumber };
+async function blockUser(auth0UserId) {
+    const client = getClient();
+    await client.users.update({ id: auth0UserId }, { blocked: true });
+    console.log(`🔒 Auth0 user blocked: ${auth0UserId}`);
+}
+
+async function unblockUser(auth0UserId) {
+    const client = getClient();
+    await client.users.update({ id: auth0UserId }, { blocked: false });
+    console.log(`🔓 Auth0 user unblocked: ${auth0UserId}`);
+}
+
+module.exports = { updateSettlementProfile, getSettlementProfile, updateProfileField, linkWhatsAppNumber, blockUser, unblockUser };

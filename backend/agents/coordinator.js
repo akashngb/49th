@@ -30,6 +30,42 @@ Keep responses concise and actionable. Use WhatsApp formatting: *bold* for impor
 
 async function handle(userId, message) {
 
+  // ── SECURITY INTERCEPT ──────────────────────────────────────────
+  if (message.trim().toUpperCase() === 'SECURE') {
+    const saved = loadUserData(userId);
+    if (saved?.auth0UserId) {
+      try {
+        const { blockUser } = require('../services/auth0Manager');
+        await blockUser(saved.auth0UserId);
+        return `🔒 *Your 49th account has been secured.*\n\nYour dashboard login has been disabled immediately. Your settlement data is safe.\n\nTo restore access, reply *RESTORE* or contact us directly.`;
+      } catch (err) {
+        console.error('[Security] Failed to block user:', err.message);
+        return `⚠️ We received your security request but had trouble locking your account. Please try again in a moment.`;
+      }
+    } else {
+      return `🔒 *Security alert received.*\n\nWe don't have a linked dashboard account for this number yet. If you believe your account is compromised, please contact us immediately.`;
+    }
+  }
+  // ── END SECURITY INTERCEPT ──────────────────────────────────────
+
+  // ── RESTORE INTERCEPT ───────────────────────────────────────────
+  if (message.trim().toUpperCase() === 'RESTORE') {
+    const saved = loadUserData(userId);
+    if (saved?.auth0UserId) {
+      try {
+        const { unblockUser } = require('../services/auth0Manager');
+        await unblockUser(saved.auth0UserId);
+        return `🔓 *Your 49th account has been restored.*\n\nYou can now log back into your dashboard at 49th.ca.\n\nIf you did not request this, reply *SECURE* immediately.`;
+      } catch (err) {
+        console.error('[Security] Failed to unblock user:', err.message);
+        return `⚠️ We had trouble restoring your account. Please try again or contact us directly.`;
+      }
+    } else {
+      return `We couldn't find a linked account for this number. Please log in at 49th.ca directly.`;
+    }
+  }
+  // ── END RESTORE INTERCEPT ───────────────────────────────────────
+
   // Restore from disk if server restarted
   if (!sessions[userId]) {
     const saved = loadUserData(userId);
