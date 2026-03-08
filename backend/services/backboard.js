@@ -101,7 +101,9 @@ ALWAYS respond in the exact same language the user uses (French, Spanish, etc.).
         sharedAssistantId = assistant.assistant_id || assistant.id || assistant.assistantId;
         return sharedAssistantId;
     } catch (err) {
-        console.error('Backboard getAssistant error:', err.response?.data || err.message);
+        const errMsg = `[Backboard getAssistant] error: ${err.response?.data ? JSON.stringify(err.response.data) : err.message}`;
+        console.error(errMsg);
+        fs.appendFileSync('backboard_error.log', errMsg + '\n');
         throw err;
     }
 }
@@ -124,7 +126,9 @@ async function chat(userId, message, systemPrompt) {
             threadId = threadRes.data.thread_id || threadRes.data.id || threadRes.data.threadId;
             setThreadId(userId, threadId);
         } catch (err) {
-            console.error('Backboard createThread error:', err.response?.data || err.message);
+            const errMsg = `[Backboard createThread] error: ${err.response?.data ? JSON.stringify(err.response.data) : err.message}`;
+            console.error(errMsg);
+            fs.appendFileSync('backboard_error.log', errMsg + '\n');
             throw err;
         }
     }
@@ -152,7 +156,29 @@ async function chat(userId, message, systemPrompt) {
         console.log(`✅ Backboard API Success [Thread: ${threadId.slice(0, 8)}...]:`, response.data.content.slice(0, 50) + '...');
         return response.data.content;
     } catch (err) {
-        console.error('Backboard addMessage error:', err.response?.data || err.message);
+        const errData = err.response?.data;
+        const errMsg = `[Backboard addMessage] error: ${errData ? JSON.stringify(errData) : err.message}`;
+        console.error(errMsg);
+        fs.appendFileSync('backboard_error.log', errMsg + '\n');
+
+        // Retrying once if thread not found
+        if (errData?.error === 'Thread not found') {
+            const retryLog = `[${new Date().toISOString()}] 🔄 Thread not found for ${userId}. Retrying...`;
+            fs.appendFileSync('backboard_error.log', retryLog + '\n');
+            console.log(retryLog);
+            const map = loadThreadMap();
+            if (map[userId]) {
+                if (typeof map[userId] === 'object') {
+                    delete map[userId].threadId;
+                } else {
+                    delete map[userId];
+                }
+                saveThreadMap(map);
+            }
+            // Recursive call for retry (will hit create thread block)
+            return chat(userId, message, systemPrompt);
+        }
+
         throw err;
     }
 }
