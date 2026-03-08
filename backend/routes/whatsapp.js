@@ -24,9 +24,17 @@ router.post('/', async (req, res) => {
       console.log('--- RECEIVED MEDIA FROM', from, '---');
       console.log('Media URL:', mediaUrl);
       
-      // Upload to Cloudinary
-      const uploadResult = await cloudinary.uploader.upload(mediaUrl, { folder: 'roots_intake' });
-      console.log('Uploaded to Cloudinary:', uploadResult.secure_url);
+      // Upload to Cloudinary and Apply AI Enhancements (cleanup, sharpening, auto-contrast)
+      // to ensure Gemini can read the document perfectly even if the WhatsApp photo is blurry/dark
+      const uploadResult = await cloudinary.uploader.upload(mediaUrl, { 
+        folder: 'roots_intake',
+        transformation: [
+          { effect: "enhance" },
+          { effect: "sharpen:100" },
+          { effect: "auto_contrast" }
+        ]
+      });
+      console.log('Uploaded and Enhanced via Cloudinary:', uploadResult.secure_url);
 
       // Pass Cloudinary URL to Gemini for strict extraction
       const extractedData = await extractDocumentData(uploadResult.secure_url);
