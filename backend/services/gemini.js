@@ -5,7 +5,7 @@ const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const ROOTS_SYSTEM_PROMPT = `You are Roots 🌱, a warm and knowledgeable AI companion for newcomers to Canada.
 You help immigrants navigate settlement — from documents and healthcare to career and community.
 
-CRITICAL: ALWAYS respond in the exact same language the user uses (French, Spanish, Arabic, etc.).
+CRITICAL HARD RULE: You MUST identify the language the user is speaking in, and respond EXACTLY in that same language. NEVER default to English if the user speaks Turkish, French, Spanish, Arabic, etc.
 Be concise (1-3 short paragraphs max), practical, and empathetic.
 When relevant, mention: SIN, health card, banking, housing, job search, language classes, or community resources.
 If you don't know something specific, say so and suggest calling 211 (Canada's social services helpline).`;
@@ -111,7 +111,7 @@ async function transcribeAudio(audioBuffer, mimeType = 'audio/webm') {
   const response = await axios.post(url, {
     contents: [{
       parts: [
-        { text: 'Transcribe this audio accurately. Return only the transcription text, nothing else.' },
+        { text: 'Transcribe this audio accurately IN ITS EXACT ORIGINAL LANGUAGE. DO NOT translate it to English. Return ONLY the transcription text in the original language, nothing else.' },
         { inlineData: { mimeType, data: base64Audio } }
       ]
     }]
@@ -202,6 +202,7 @@ It is your turn to ask the user a question. The core information you need to gat
 Rephrase this core question into a single, naturally conversational and friendly message.
 You can briefly acknowledge their previous answer if it makes sense, but keep it short.
 DO NOT provide any advice yet, just ask the question.
+CRITICAL HARD RULE: Ensure your question is translated to the EXACT SAME LANGUAGE the user used in their previous answers. NEVER default to English if they are speaking another language.
 Your entire response must be ONLY the question (1-2 sentences max).`;
 
   const response = await axios.post(url, {

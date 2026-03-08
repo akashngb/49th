@@ -3,7 +3,7 @@ const router = express.Router();
 const coordinator = require('../agents/coordinator');
 const axios = require('axios');
 const { transcribeAudio, extractDocumentData } = require('../services/gemini');
-const { textToSpeechUrl } = require('../services/elevenlabs');
+const { textToSpeech } = require('../services/elevenlabs');
 const { uploadBuffer } = require('../services/cloudinary');
 const cloudinary = require('cloudinary').v2;
 
@@ -48,13 +48,6 @@ router.post('/', async (req, res) => {
         // ── IMAGE: upload to Cloudinary and extract document data ──
         isImage = true;
         console.log('📄 Received image/document from', from);
-
-        // Securely download the image buffer first utilizing Twilio credentials
-        const authHeader = 'Basic ' + Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
-        const mediaRes = await axios.get(mediaUrl, {
-          responseType: 'arraybuffer',
-          headers: { Authorization: authHeader }
-        });
 
         // Use the cloudinary stream to upload the buffer, but apply enhancements
         const imageBuffer = Buffer.from(mediaRes.data);
@@ -117,7 +110,7 @@ router.post('/', async (req, res) => {
     // If they sent an audio voice note, reply with a TTS voice note
     if (isAudio) {
       console.log('🗣️ Generating TTS response via ElevenLabs...');
-      const ttsBuffer = await textToSpeechUrl(replyText);
+      const ttsBuffer = await textToSpeech(replyText); // eleven_multilingual_v2 — supports Turkish, French, Spanish, etc.
       console.log('☁️ Uploading TTS to Cloudinary...');
       audioMediaUrl = await uploadBuffer(ttsBuffer, `roots_tts_${Date.now()}`, 'video');
       console.log('🎵 TTS available at:', audioMediaUrl);
