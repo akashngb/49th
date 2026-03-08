@@ -1,7 +1,7 @@
 const { generateCriticalPath, chat, generateNextQuestion } = require('../services/gemini');
 const { formatStatusMessage } = require('../services/statusTracker');
 const { formatProxyMessage } = require('../services/proxyMatcher');
-const { chat, saveUserProfile, loadUserData } = require('../services/backboard');
+const { chat: backboardChat, saveUserProfile, loadUserData } = require('../services/backboard');
 const auth0Manager = require('../services/auth0Manager');
 
 // Per-user sessions: tracks onboarding state and full conversation history
@@ -146,8 +146,8 @@ This user completed onboarding on the 49th web dashboard. Here is their full pro
 Greet them warmly by first name if available. Do not ask for any information already provided above. Pick up exactly where their settlement journey is — suggest the most urgent next task based on their profile and what's already done.`;
 
           // Prime the Backboard thread with context silently, then respond to actual message
-          await chat(userId, contextMessage, ROOTS_SYSTEM_PROMPT);
-          const response = await chat(userId, message, ROOTS_SYSTEM_PROMPT);
+          await backboardChat(userId, contextMessage, ROOTS_SYSTEM_PROMPT);
+          const response = await backboardChat(userId, message, ROOTS_SYSTEM_PROMPT);
           return response;
         }
       } catch (err) {
@@ -306,7 +306,7 @@ At the end of responses, suggest: Type *STATUS* to check your application timeli
 If your answer discusses immigration application processing times, approval rates, or general statistics, you MUST append exactly this text at the very end of your answer: [GRAPHIC]`;
 
     try {
-      let response = await chat(userId, fullMessage, systemPrompt);
+      let response = await backboardChat(userId, fullMessage, systemPrompt);
 
       // Task 3 — Detect task completion keywords and sync back to Auth0
       const saved = loadUserData(userId);

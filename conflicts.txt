@@ -1,0 +1,12 @@
+.gitignore
+backend/agents/coordinator.js
+backend/index.js
+backend/node_modules/.bin/semver
+backend/node_modules/.package-lock.json
+backend/package-lock.json
+backend/package.json
+backend/routes/api.js
+backend/routes/whatsapp.js
+backend/services/backboard.js
+backend/services/elevenlabs.js
+backend/services/gemini.js
