@@ -14,7 +14,7 @@ If you don't know something specific, say so and suggest calling 211 (Canada's s
  * Generate a structured critical path of tasks for a newcomer profile
  */
 async function generateCriticalPath(profile) {
-  const url = `${GEMINI_BASE}/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const url = `${GEMINI_BASE}/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
   const prompt = `You are an expert on Canadian immigration and newcomer onboarding.
 Given this immigrant profile, generate a sequenced critical path of tasks for their first 90 days.
 Return JSON only. No markdown. No backticks. No explanation.
@@ -41,7 +41,7 @@ Return exactly this structure with 5-7 tasks:
  * @param {string} [userPhoneNumber] - The user's phone number for outbound calls
  */
 async function chat(message, history = [], systemPrompt = null, userPhoneNumber = null) {
-  const url = `${GEMINI_BASE}/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const url = `${GEMINI_BASE}/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
   const systemInstruction = {
     parts: [{ text: systemPrompt || ROOTS_SYSTEM_PROMPT }]
@@ -105,7 +105,7 @@ async function chat(message, history = [], systemPrompt = null, userPhoneNumber 
  * @param {string} mimeType
  */
 async function transcribeAudio(audioBuffer, mimeType = 'audio/webm') {
-  const url = `${GEMINI_BASE}/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const url = `${GEMINI_BASE}/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
   const base64Audio = audioBuffer.toString('base64');
 
   const response = await axios.post(url, {
@@ -125,7 +125,7 @@ async function transcribeAudio(audioBuffer, mimeType = 'audio/webm') {
  * @param {string} imageUrl - Public URL to the document image
  */
 async function extractDocumentData(imageUrl) {
-  const url = `${GEMINI_BASE}/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const url = `${GEMINI_BASE}/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
   console.log('Sending image to Gemini for document extraction:', imageUrl);
   try {
@@ -186,7 +186,8 @@ Return ONLY structured JSON matching this shape, with no markdown, backticks or 
  * @param {string} targetTopic - The core question to ask next
  */
 async function generateNextQuestion(previousAnswers, targetTopic) {
-  const url = `${GEMINI_BASE}/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const url = `${GEMINI_BASE}/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
 
   let context = "";
   if (previousAnswers && previousAnswers.length > 0) {

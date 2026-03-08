@@ -11,7 +11,7 @@ console.log(`Key: [${key}]`);
 console.log(`Length: ${key.length}`);
 console.log(`Hex: ${Buffer.from(key).toString('hex')}`);
 
-const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${key.trim()}`;
+const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key.trim()}`;
 const data = {
     contents: [{
         parts: [{ text: "Hello" }]
@@ -21,6 +21,7 @@ const data = {
 axios.post(url, data)
     .then(res => {
         console.log('✅ Success!');
+        console.log(res.data);
     })
     .catch(err => {
         console.log('❌ Error:');

@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const coordinator = require('../agents/coordinator');
@@ -10,19 +11,7 @@ const { formatStatusMessage } = require('../services/statusTracker');
 const backboard = require('../services/backboard');
 const elevenlabs = require('../services/elevenlabs');
 
-// POST /api/graphic — Generate a statistics/graph image and return Cloudinary URL
-router.post('/graphic', async (req, res) => {
-  try {
-    const { type, options } = req.body;
-    if (!type || !options) return res.status(400).json({ error: 'type and options are required' });
-    const url = await generatePulseCard(type, options);
-    res.json({ url });
-  } catch (err) {
-    console.error('Graphic error:', err.message);
-    res.status(500).json({ error: 'Failed to generate graphic' });
-  }
-});
-
+// CLEANUP: removed merge conflict marker
 // POST /api/chat — send a message to the AI coordinator
 router.post('/chat', async (req, res) => {
   try {
@@ -42,6 +31,7 @@ router.post('/chat', async (req, res) => {
 
 // POST /api/ai/chat — Backboard AI chat with persistent memory
 router.post('/ai/chat', async (req, res) => {
+  // CLEANUP: removed merge conflict marker
   try {
     const { userId, message, systemPrompt } = req.body;
     if (!userId || !message) {
@@ -144,6 +134,7 @@ router.get('/proxies', (req, res) => {
 
 // POST /api/status — Get status analysis
 router.post('/status', async (req, res) => {
+  // CLEANUP: removed merge conflict marker
   try {
     const { applicationType, monthsWaiting, type, months } = req.body;
     const appType = applicationType || type;
@@ -155,7 +146,6 @@ router.post('/status', async (req, res) => {
     res.json({ message: msg, response: msg });
   } catch (err) {
     console.error('Status error:', err.message);
-    res.status(500).json({ error: 'Failed to analyze status' });
   }
 });
 
@@ -280,6 +270,7 @@ const vapi = require('../services/vapi');
 
 // POST /api/vapi/assistant — Create or update the Vapi interview assistant
 router.post('/vapi/assistant', async (req, res) => {
+  // CLEANUP: removed merge conflict marker
   try {
     const assistant = await vapi.createOrUpdateAssistant();
     res.json({ assistantId: assistant.id, name: assistant.name, status: 'ready' });

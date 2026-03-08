@@ -12,6 +12,7 @@ app.use('/api', require('./routes/api'));
 
 // Handle misconfigured Vapi dashboard URLs — forward to the correct handler
 app.post('/vapi/webhook', (req, res, next) => {
+    // Forward the request to the correct /api/vapi/webhook handler
     req.url = '/vapi/webhook';
     require('./routes/api')(req, res, next);
 });

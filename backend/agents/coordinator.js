@@ -157,7 +157,7 @@ Greet them warmly by first name if available. Do not ask for any information alr
     }
   }
 
-
+  // New user — start onboarding (unless they immediately ask for a call)
   if (!sessions[userId]) {
     sessions[userId] = {
       stage: isCallIntent ? 'active' : 'onboarding',
@@ -312,10 +312,6 @@ Greet them warmly by first name if available. Do not ask for any information alr
       ? `[User profile: ${session.profile.questions.map((q, i) => `${q}: ${session.profile.answers[i]}`).join(' | ')}]`
       : '';
 
-    const fullMessage = profileContext
-      ? `${profileContext}\n\nUser says: ${message}`
-      : message;
-
     const systemPrompt = `You are Roots 🌱, a warm AI companion for newcomers to Canada.
 Help with immigration, settlement, banking, housing, healthcare, jobs, and community.
 CRITICAL HARD RULE: You MUST identify the language the user is speaking in, and respond EXACTLY in that same language. NEVER default to English if the user speaks another language (e.g. Turkish, French, etc). Be concise (2-3 paragraphs max).
@@ -323,7 +319,7 @@ At the end of responses, suggest: Type *STATUS* to check your application timeli
 If your answer discusses immigration application processing times, approval rates, or general statistics, you MUST append exactly this text at the very end of your answer: [GRAPHIC]`;
 
     try {
-      let response = await backboardChat(userId, fullMessage, systemPrompt);
+      let response = await backboardChat(userId, profileContext ? `${profileContext}\n\nUser says: ${message}` : message, systemPrompt);
 
       // Task 3 — Detect task completion keywords and sync back to Auth0
       const saved = loadUserData(userId);

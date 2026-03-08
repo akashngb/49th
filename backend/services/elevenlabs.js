@@ -44,16 +44,14 @@ async function textToSpeechUrl(text) {
                 headers: {
                     'xi-api-key': ELEVENLABS_API_KEY,
                     'Content-Type': 'application/json',
-                    'Accept': 'audio/mpeg'
                 },
-                responseType: 'arraybuffer'
+                responseType: 'arraybuffer',
             }
         );
-
         return Buffer.from(response.data);
-    } catch (err) {
-        console.error('ElevenLabs error:', err.response?.data || err.message);
-        throw err;
+    } catch (error) {
+        console.error('ElevenLabs textToSpeechUrl error:', error?.response?.data || error.message);
+        throw error;
     }
 }
 
@@ -93,5 +91,4 @@ async function listVoices() {
         category: v.category,
     })) || [];
 }
-
 module.exports = { textToSpeechUrl, textToSpeech, listVoices };
