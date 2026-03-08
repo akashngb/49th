@@ -1,0 +1,82 @@
+[
+  {
+    "to": "whatsapp:+16473399989",
+    "status": "failed",
+    "errorCode": 63038,
+    "errorMsg": null,
+    "dateSent": "2026-03-08T02:25:38.000Z",
+    "body": "Hello! How can I assist you today?\n\nType *STATUS* to check your application timeline or *PROXY* to connect with others who made your move."
+  },
+  {
+    "to": "whatsapp:+14155238886",
+    "status": "received",
+    "errorCode": null,
+    "errorMsg": null,
+    "dateSent": "2026-03-08T02:25:34.000Z",
+    "body": "Yeo"
+  },
+  {
+    "to": "whatsapp:+16473399989",
+    "status": "failed",
+    "errorCode": 63038,
+    "errorMsg": null,
+    "dateSent": "2026-03-08T02:25:32.000Z",
+    "body": "Hello! How can I help you today?\n\nType *STATUS* to check your application timeline or *PROXY* to connect with others who made your move."
+  },
+  {
+    "to": "whatsapp:+14155238886",
+    "status": "received",
+    "errorCode": null,
+    "errorMsg": null,
+    "dateSent": "2026-03-08T02:25:27.000Z",
+    "body": "Hey"
+  },
+  {
+    "to": "whatsapp:+16473399989",
+    "status": "failed",
+    "errorCode": 63038,
+    "errorMsg": null,
+    "dateSent": "2026-03-08T02:24:43.000Z",
+    "body": "I can't make outbound calls right now, but you can call me directly at +1 (572) 900 6236! Just use your phone to call me and we can talk 📞"
+  },
+  {
+    "to": "whatsapp:+14155238886",
+    "status": "received",
+    "errorCode": null,
+    "errorMsg": null,
+    "dateSent": "2026-03-08T02:24:38.000Z",
+    "body": "Call me"
+  },
+  {
+    "to": "whatsapp:+14155238886",
+    "status": "received",
+    "errorCode": null,
+    "errorMsg": null,
+    "dateSent": "2026-03-08T02:24:28.000Z",
+    "body": "Join yet-rough"
+  },
+  {
+    "to": "whatsapp:+16472824910",
+    "status": "failed",
+    "errorCode": 63038,
+    "errorMsg": null,
+    "dateSent": "2026-03-08T02:22:29.000Z",
+    "body": "Hello! Welcome to Canada. I'm Roots, your AI companion. I'm here to help newcomers like you with any questions about settling in, from immigration and housing to jobs and healthcare.\n\nHow can I assist you today?\n\nType *STATUS* to check your application timeline or *PROXY* to connect with others who made your move."
+  },
+  {
+    "to": "whatsapp:+14155238886",
+    "status": "received",
+    "errorCode": null,
+    "errorMsg": null,
+    "dateSent": "2026-03-08T02:22:25.000Z",
+    "body": "Hey"
+  },
+  {
+    "to": "whatsapp:+16472824910",
+    "status": "failed",
+    "errorCode": 63038,
+    "errorMsg": null,
+    "dateSent": "2026-03-08T02:22:09.000Z",
+    "body": "I can't make outbound calls right now, but you can call me directly at +1 (572) 900 6236! Just use your phone to call me and we can talk 📞"
+  }
+]
