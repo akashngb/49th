@@ -151,3 +151,42 @@ export async function answerBrowserQuestion(answer: string): Promise<void> {
         body: JSON.stringify({ answer }),
     });
 }
+export async function linkWhatsAppPhone(phoneNumber: string, auth0UserId: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/user/link-phone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber, auth0UserId }),
+    });
+    if (!res.ok) throw new Error('Failed to link phone');
+}
+
+export async function checkUserProfile(phoneNumber: string): Promise<{ hasProfile: boolean }> {
+    const res = await fetch(`${API_BASE}/user/profile?phone=${encodeURIComponent(phoneNumber)}`);
+    if (!res.ok) return { hasProfile: false };
+    return res.json();
+}
+
+export async function syncProfileToAuth0(auth0UserId: string, profile: Record<string, any>): Promise<void> {
+    const res = await fetch(`${API_BASE}/user/sync-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auth0UserId, profile }),
+    });
+    if (!res.ok) throw new Error('Failed to sync profile');
+}
+
+export async function getSettlementProfile(auth0UserId: string): Promise<Record<string, any>> {
+    const res = await fetch(`${API_BASE}/user/settlement-profile?auth0UserId=${encodeURIComponent(auth0UserId)}`);
+    if (!res.ok) throw new Error('Failed to get profile');
+    const data = await res.json();
+    return data.profile;
+}
+
+export async function updateTaskCompletion(auth0UserId: string, taskId: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/user/update-task`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auth0UserId, taskId, completed: true }),
+    });
+    if (!res.ok) throw new Error('Failed to update task');
+}

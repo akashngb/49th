@@ -25,6 +25,8 @@ import {
 } from '../api';
 
 import { BrowserTaskPanel, type BrowserPanel } from '../components/BrowserTaskPanel';
+import { RoleProtectedAction } from '../components/RoleProtectedAction';
+import { useRootsUser } from '../hooks/useRootsUser';
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -32,6 +34,7 @@ export const ArrivalEngine = () => {
   const [view, setView] = useState<'7' | '30' | '90'>('30');
   const [panel, setPanel] = useState<BrowserPanel | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { isPrimary, isFamily } = useRootsUser();
 
   const startPolling = () => {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -94,6 +97,15 @@ export const ArrivalEngine = () => {
   return (
     <>
       <div className="p-12 max-w-7xl mx-auto space-y-32 min-h-screen">
+        {isFamily && (
+          <div className="mb-8 px-8 py-5 bg-mint/40 border border-forest/20 rounded-2xl flex items-center gap-4">
+            <div className="w-2 h-2 rounded-full bg-forest" />
+            <p className="text-[11px] uppercase tracking-[0.3em] font-bold text-forest/70">
+              You are viewing as a family member — task automation is managed by the primary account holder
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <section className="flex flex-col md:flex-row md:items-end justify-between gap-16 border-b border-ink pb-20">
           <div className="max-w-3xl">
@@ -188,24 +200,26 @@ export const ArrivalEngine = () => {
 
                     <div className="flex items-center gap-10 pt-4">
                       {/* Main action button */}
-                      <button
-                        onClick={() => handleExecute(task)}
-                        disabled={task.status === 'locked' || task.status === 'done'}
-                        className={`px-12 py-6 rounded font-bold text-xs transition-all uppercase tracking-[0.3em] flex items-center gap-3 ${task.status === 'done'
-                          ? 'bg-mint text-forest cursor-default border border-forest/10'
-                          : task.status === 'ready'
-                            ? 'bg-forest text-white hover:bg-forest/90 hover:scale-[1.02] shadow-2xl shadow-forest/30'
-                            : 'bg-taupe/10 text-charcoal/20 cursor-not-allowed border border-ink'
-                          }`}
-                      >
-                        {task.status === 'done' ? (
-                          <>Protocol Completed</>
-                        ) : task.status === 'ready' ? (
-                          <><Bot size={16} /> Execute with Nanoclaw</>
-                        ) : (
-                          <>Node Locked</>
-                        )}
-                      </button>
+                      <RoleProtectedAction>
+                        <button
+                          onClick={() => handleExecute(task)}
+                          disabled={task.status === 'locked' || task.status === 'done'}
+                          className={`px-12 py-6 rounded font-bold text-xs transition-all uppercase tracking-[0.3em] flex items-center gap-3 ${task.status === 'done'
+                            ? 'bg-mint text-forest cursor-default border border-forest/10'
+                            : task.status === 'ready'
+                              ? 'bg-forest text-white hover:bg-forest/90 hover:scale-[1.02] shadow-2xl shadow-forest/30'
+                              : 'bg-taupe/10 text-charcoal/20 cursor-not-allowed border border-ink'
+                            }`}
+                        >
+                          {task.status === 'done' ? (
+                            <>Protocol Completed</>
+                          ) : task.status === 'ready' ? (
+                            <><Bot size={16} /> Execute with Nanoclaw</>
+                          ) : (
+                            <>Node Locked</>
+                          )}
+                        </button>
+                      </RoleProtectedAction>
 
                       {task.status === 'ready' && (
                         <button className="text-[10px] font-bold uppercase tracking-[0.4em] text-charcoal/30 hover:text-charcoal transition-colors border-b border-transparent hover:border-charcoal pb-1">

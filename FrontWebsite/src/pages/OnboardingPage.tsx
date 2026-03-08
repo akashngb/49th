@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth0 } from '@auth0/auth0-react';
 import {
   ArrowRight,
   ArrowLeft,
@@ -67,6 +68,19 @@ export const OnboardingPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [aiTasks, setAiTasks] = useState<any[]>([]);
   const navigate = useNavigate();
+  const { loginWithRedirect, isAuthenticated, user } = useAuth0();
+
+  const handleEnterDashboard = () => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    } else {
+      loginWithRedirect({
+        authorizationParams: {
+          redirect_uri: window.location.origin + '/phone-link'
+        }
+      });
+    }
+  };
 
   const handleNext = async () => {
     if (currentStep < steps.length - 1) {
@@ -89,6 +103,21 @@ export const OnboardingPage = () => {
         };
         const result = await submitOnboarding(profile);
         setAiTasks(result.tasks || []);
+
+        // Task 10 — sync profile to Auth0 user_metadata
+        if (user?.sub) {
+          const { syncProfileToAuth0 } = await import('../api');
+          syncProfileToAuth0(user.sub, {
+            city: formData.city,
+            status: formData.status,
+            profession: formData.profession,
+            country: formData.country,
+            arrivalDate: formData.arrivalDate,
+            family: formData.maritalStatus === 'Single' ? 'alone' : 'family',
+            concern: 'settling in',
+            language: formData.language || 'English',
+          }).catch(console.error);
+        }
       } catch {
         setAiTasks([]);
       }
@@ -202,7 +231,7 @@ export const OnboardingPage = () => {
           </div>
 
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={handleEnterDashboard}
             className="w-full py-8 bg-forest text-white rounded text-[10px] font-bold uppercase tracking-[0.4em] hover:bg-forest/90 transition-all shadow-2xl shadow-forest/30 flex items-center justify-center gap-6 group"
           >
             Enter your dashboard <ArrowRight size={24} className="group-hover:translate-x-4 transition-transform" />

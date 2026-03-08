@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   CheckCircle2,
@@ -21,6 +21,9 @@ import {
   Cell
 } from 'recharts';
 
+import { useRootsUser } from '../hooks/useRootsUser';
+import { getSettlementProfile } from '../api';
+
 const data = [
   { name: 'Week 1', progress: 80 },
   { name: 'Week 2', progress: 45 },
@@ -29,6 +32,19 @@ const data = [
 ];
 
 export const Overview = () => {
+  const { displayName, city, auth0UserId, criticalPathProgress, sinObtained, ohipRegistered } = useRootsUser();
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (auth0UserId) {
+      getSettlementProfile(auth0UserId).then(setProfile).catch(console.error);
+    }
+  }, [auth0UserId]);
+
+  const resolvedCity = city || profile?.city || 'Canada';
+  const resolvedProgress = criticalPathProgress || profile?.critical_path_progress || 0;
+  const progressPercent = Math.min(Math.round((resolvedProgress / 10) * 100), 100);
+
   return (
     <div className="p-12 space-y-12 relative min-h-screen">
       {/* Welcome Header */}
@@ -40,7 +56,7 @@ export const Overview = () => {
           </div>
           <h1 className="text-7xl md:text-[120px] font-serif font-bold text-forest mb-6 leading-[0.82] tracking-[-0.04em]">
             Welcome home, <br />
-            <span className="italic text-terracotta skew-x-[-10deg] inline-block">Mateo.</span>
+            <span className="italic text-terracotta skew-x-[-10deg] inline-block">{displayName.split(' ')[0]}.</span>
           </h1>
           <p className="text-2xl text-charcoal/50 max-w-xl font-light leading-relaxed">
             You've been in Toronto for 12 days. The system is currently optimizing your <span className="text-forest font-bold italic underline decoration-mint underline-offset-8">Arrival Roadmap</span> for local integration.
@@ -49,7 +65,7 @@ export const Overview = () => {
         <div className="flex flex-col items-end gap-6">
           <div className="text-right">
             <p className="text-[10px] font-bold text-charcoal/30 uppercase tracking-[0.4em] mb-2">Current Node</p>
-            <p className="font-serif text-4xl font-bold text-forest">Toronto, ON</p>
+            <p className="font-serif text-4xl font-bold text-forest">{resolvedCity}</p>
           </div>
           <div className="px-8 py-4 bg-white border border-ink rounded flex items-center gap-4 shadow-xl shadow-black/5">
             <div className="w-2 h-2 rounded-full bg-forest" />
@@ -69,12 +85,12 @@ export const Overview = () => {
             <span className="text-[9px] font-mono text-charcoal/20">01</span>
           </div>
           <div className="flex items-baseline gap-3 mb-4">
-            <span className="text-6xl font-serif font-bold text-charcoal">12</span>
-            <span className="text-2xl font-serif text-charcoal/20">/ 28</span>
+            <span className="text-6xl font-serif font-bold text-charcoal">{resolvedProgress}</span>
+            <span className="text-2xl font-serif text-charcoal/20">/ 10</span>
           </div>
           <p className="text-xs text-charcoal/40 font-medium uppercase tracking-widest">Tasks completed</p>
           <div className="mt-10 w-full bg-taupe/20 h-1.5 rounded-full overflow-hidden">
-            <div className="bg-forest h-full w-[42%] transition-all duration-1000" />
+            <div className="bg-forest h-full transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
           </div>
         </div>
 

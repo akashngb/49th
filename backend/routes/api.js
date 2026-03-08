@@ -401,4 +401,150 @@ router.post('/vapi/webhook', async (req, res) => {
   }
 });
 
+// GET /api/user/profile?phone=+1XXXXXXXXXX — check if user has existing WhatsApp profile
+router.get('/user/profile', (req, res) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) return res.status(400).json({ error: 'phone is required' });
+
+    // Check if this phone has an existing Backboard thread (i.e. they've used WhatsApp already)
+    const fs = require('fs');
+    const path = require('path');
+    const threadMapPath = path.join(__dirname, '..', 'thread_map.json');
+    let hasProfile = false;
+    if (fs.existsSync(threadMapPath)) {
+      const threadMap = JSON.parse(fs.readFileSync(threadMapPath, 'utf8'));
+      // Twilio WhatsApp numbers are stored as "whatsapp:+1XXXXXXXXXX"
+      hasProfile = !!(threadMap[`whatsapp:${phone}`] || threadMap[phone]);
+    }
+    res.json({ hasProfile });
+  } catch (err) {
+    console.error('Profile check error:', err.message);
+    res.json({ hasProfile: false });
+  }
+});
+
+// POST /api/user/link-phone — link WhatsApp number to Auth0 user_metadata
+const auth0Manager = require('../services/auth0Manager');
+
+router.post('/user/link-phone', async (req, res) => {
+  try {
+    const { phoneNumber, auth0UserId } = req.body;
+    if (!phoneNumber || !auth0UserId) {
+      return res.status(400).json({ error: 'phoneNumber and auth0UserId are required' });
+    }
+
+    await auth0Manager.linkWhatsAppNumber(auth0UserId, phoneNumber);
+
+    // Also update thread_map.json to link the WhatsApp key to this Auth0 user
+    const fs = require('fs');
+    const path = require('path');
+    const threadMapPath = path.join(__dirname, '..', 'data', 'thread_map.json');
+    let map = {};
+    try { map = JSON.parse(fs.readFileSync(threadMapPath, 'utf8')); } catch { }
+    const key = `whatsapp:${phoneNumber}`;
+    map[key] = { ...(map[key] || {}), auth0UserId };
+    fs.writeFileSync(threadMapPath, JSON.stringify(map, null, 2));
+
+    console.log(`📱 Linked WhatsApp ${phoneNumber} → Auth0 ${auth0UserId}`);
+    res.json({ success: true, phoneNumber });
+  } catch (err) {
+    console.error('Link phone error:', err.message);
+    res.status(500).json({ error: 'Failed to link phone number' });
+  }
+});
+
+// POST /api/user/sync-profile — push onboarding data to Auth0 user_metadata
+router.post('/user/sync-profile', async (req, res) => {
+  try {
+    const { auth0UserId, profile } = req.body;
+    if (!auth0UserId || !profile) {
+      return res.status(400).json({ error: 'auth0UserId and profile are required' });
+    }
+
+    const metadata = {
+      city: profile.city || null,
+      immigration_status: profile.status || null,
+      profession: profile.profession || null,
+      country_of_origin: profile.country || null,
+      arrival_date: profile.arrivalDate || null,
+      family_situation: profile.family || null,
+      primary_concern: profile.concern || null,
+      language: profile.language || 'English',
+      critical_path_progress: 0,
+      sin_obtained: false,
+      ohip_registered: false,
+      bank_opened: false,
+      doctor_found: false,
+    };
+
+    await auth0Manager.updateSettlementProfile(auth0UserId, metadata);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Sync profile error:', err.message);
+    res.status(500).json({ error: 'Failed to sync profile' });
+  }
+});
+
+// GET /api/user/settlement-profile — read Auth0 user_metadata for dashboard
+router.get('/user/settlement-profile', async (req, res) => {
+  try {
+    const { auth0UserId } = req.query;
+    if (!auth0UserId) return res.status(400).json({ error: 'auth0UserId is required' });
+
+    const profile = await auth0Manager.getSettlementProfile(auth0UserId);
+    res.json({ profile });
+  } catch (err) {
+    console.error('Get settlement profile error:', err.message);
+    res.status(500).json({ error: 'Failed to get profile' });
+  }
+});
+
+// POST /api/user/update-task — mark a settlement task as complete
+router.post('/user/update-task', async (req, res) => {
+  try {
+    const { auth0UserId, taskId, completed } = req.body;
+    if (!auth0UserId || !taskId) {
+      return res.status(400).json({ error: 'auth0UserId and taskId are required' });
+    }
+
+    const TASK_FIELD_MAP = {
+      sin: 'sin_obtained',
+      health: 'ohip_registered',
+      bank: 'bank_opened',
+      doctor: 'doctor_found',
+    };
+
+    const field = TASK_FIELD_MAP[taskId];
+    if (field) {
+      await auth0Manager.updateProfileField(auth0UserId, field, completed !== false);
+    }
+
+    const profile = await auth0Manager.getSettlementProfile(auth0UserId);
+    const current = profile.critical_path_progress || 0;
+    await auth0Manager.updateProfileField(auth0UserId, 'critical_path_progress', current + 1);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update task error:', err.message);
+    res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+// POST /api/user/unblock — restore a blocked Auth0 account from the dashboard
+router.post('/user/unblock', async (req, res) => {
+  try {
+    const { auth0UserId } = req.body;
+    if (!auth0UserId) {
+      return res.status(400).json({ error: 'auth0UserId is required' });
+    }
+    await auth0Manager.unblockUser(auth0UserId);
+    res.json({ success: true, message: 'Account restored successfully' });
+  } catch (err) {
+    console.error('Unblock error:', err.message);
+    res.status(500).json({ error: 'Failed to restore account' });
+  }
+});
+
 module.exports = router;
+

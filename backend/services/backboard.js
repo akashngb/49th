@@ -1,15 +1,69 @@
 const axios = require('axios');
 const FormData = require('form-data');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Backboard.io — AI Memory + LLM Router
  * Provides persistent memory across conversations using the Assistants/Threads architecture.
+ * Thread IDs and user profiles are persisted to disk via thread_map.json.
  */
 
 const BACKBOARD_BASE = 'https://app.backboard.io/api';
+const THREAD_MAP_PATH = path.join(__dirname, '../data/thread_map.json');
 
 let sharedAssistantId = null;
-const userThreads = new Map();
+
+// ── Disk persistence helpers ──────────────────────────────────────────────────
+
+function loadThreadMap() {
+    try {
+        return JSON.parse(fs.readFileSync(THREAD_MAP_PATH, 'utf8'));
+    } catch { return {}; }
+}
+
+function saveThreadMap(map) {
+    fs.mkdirSync(path.dirname(THREAD_MAP_PATH), { recursive: true });
+    fs.writeFileSync(THREAD_MAP_PATH, JSON.stringify(map, null, 2));
+}
+
+function getThreadId(userId) {
+    const map = loadThreadMap();
+    const entry = map[userId];
+    if (!entry) return null;
+    return typeof entry === 'string' ? entry : entry.threadId || null;
+}
+
+function setThreadId(userId, threadId) {
+    const map = loadThreadMap();
+    if (typeof map[userId] === 'object' && map[userId] !== null) {
+        map[userId].threadId = threadId;
+    } else {
+        map[userId] = { threadId };
+    }
+    saveThreadMap(map);
+}
+
+// Save a user's profile and stage alongside their threadId
+function saveUserProfile(userId, profile, stage) {
+    const map = loadThreadMap();
+    const existing = (typeof map[userId] === 'object' && map[userId] !== null)
+        ? map[userId]
+        : { threadId: map[userId] || null };
+    map[userId] = { ...existing, stage, profile };
+    saveThreadMap(map);
+}
+
+// Load full user data { threadId, stage, profile }
+function loadUserData(userId) {
+    const map = loadThreadMap();
+    const entry = map[userId];
+    if (!entry) return null;
+    if (typeof entry === 'string') return { threadId: entry, stage: null, profile: null };
+    return entry;
+}
+
+// ── Backboard API ─────────────────────────────────────────────────────────────
 
 async function getAssistant(apiKey, systemPrompt) {
     if (sharedAssistantId) return sharedAssistantId;
@@ -59,8 +113,8 @@ async function chat(userId, message, systemPrompt) {
 
     const aid = await getAssistant(apiKey, systemPrompt);
 
-    // Get or create a thread for this user session
-    let threadId = userThreads.get(userId);
+    // Get or create a thread for this user — persisted to disk
+    let threadId = getThreadId(userId);
     if (!threadId) {
         try {
             const threadRes = await axios.post(`${BACKBOARD_BASE}/assistants/${aid}/threads`, {}, {
@@ -68,18 +122,16 @@ async function chat(userId, message, systemPrompt) {
             });
             console.log('Backboard Thread:', threadRes.data);
             threadId = threadRes.data.thread_id || threadRes.data.id || threadRes.data.threadId;
-            userThreads.set(userId, threadId);
+            setThreadId(userId, threadId);
         } catch (err) {
             console.error('Backboard createThread error:', err.response?.data || err.message);
             throw err;
         }
     }
 
-    // Default to gemini-2.5-flash (confirmed in Backboard catalog)
     const model = process.env.BACKBOARD_MODEL || 'gemini-2.5-flash';
 
     try {
-        // Backboard addMessage uses multipart/form-data
         const form = new FormData();
         form.append('content', message);
         form.append('model_name', model);
@@ -111,4 +163,4 @@ async function storeMemory(userId, context) {
     return true;
 }
 
-module.exports = { chat, storeMemory };
+module.exports = { chat, storeMemory, saveUserProfile, loadUserData };
