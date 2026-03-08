@@ -18,8 +18,9 @@ async function getAssistantId() {
   if (assistantId) return assistantId;
 
   const assistants = await client.listAssistants({ limit: 10 });
+  const assistantList = Array.isArray(assistants) ? assistants : (assistants.data || []);
 
-  const existing = assistants.data.find(a => a.name === "Roots All-in-One Assistant");
+  const existing = assistantList.find(a => a.name === "Roots All-in-One Assistant");
 
   if (existing) {
     assistantId = existing.assistantId;
