@@ -19,6 +19,7 @@ router.post('/', async (req, res) => {
 
   try {
     let responseText = '';
+    let enhancedMediaUrl = null;
 
     if (mediaUrl) {
       console.log('--- RECEIVED MEDIA FROM', from, '---');
@@ -35,6 +36,7 @@ router.post('/', async (req, res) => {
         ]
       });
       console.log('Uploaded and Enhanced via Cloudinary:', uploadResult.secure_url);
+      enhancedMediaUrl = uploadResult.secure_url;
 
       // Pass Cloudinary URL to Gemini for strict extraction
       const extractedData = await extractDocumentData(uploadResult.secure_url);
@@ -42,7 +44,7 @@ router.post('/', async (req, res) => {
 
       // Structure response as strict JSON card
       responseText = JSON.stringify({
-        message: `I've successfully processed your ${extractedData.docType}.\n\nNext step: ${extractedData.nextStep}.\n\nIs there anything else I can assist with?`,
+        message: `✨ Here is your enhanced document!\n\nI've successfully processed your ${extractedData.docType}.\n\nNext step: ${extractedData.nextStep}.`,
         card: {
           type: "applicationBreakdown",
           options: {
@@ -73,7 +75,7 @@ router.post('/', async (req, res) => {
     // Only send via Twilio if credentials exist
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
       const { sendWhatsAppMessage } = require('../services/twilio');
-      await sendWhatsAppMessage(from, textToSend);
+      await sendWhatsAppMessage(from, textToSend, enhancedMediaUrl);
     }
   } catch (err) {
     console.error('Handler error:', err);
