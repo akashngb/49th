@@ -129,7 +129,7 @@ async function chat(userId, message, systemPrompt) {
         }
     }
 
-    const model = process.env.BACKBOARD_MODEL || 'gemini-2.5-flash';
+    const model = process.env.BACKBOARD_MODEL || 'gemini-1.5-flash';
 
     try {
         const form = new FormData();

@@ -49,6 +49,16 @@ router.post('/', async (req, res) => {
         isImage = true;
         console.log('📄 Received image/document from', from);
 
+        const authHeader = 'Basic ' + Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
+        const mediaRes = await axios.get(mediaUrl, {
+          responseType: 'arraybuffer',
+          headers: { Authorization: authHeader }
+        });
+
+        if (!mediaRes || !mediaRes.data) {
+          throw new Error('Failed to download media content');
+        }
+
         // Use the cloudinary stream to upload the buffer, but apply enhancements
         const imageBuffer = Buffer.from(mediaRes.data);
         const cloudinaryUrl = await new Promise((resolve, reject) => {

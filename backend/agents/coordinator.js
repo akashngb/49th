@@ -206,6 +206,23 @@ Greet them warmly by first name if available. Do not ask for any information alr
 
   // ONBOARDING flow — collect answers and generate the next natural question
   if (session.stage === 'onboarding') {
+    // ── INTERRUPT CHECK: If user is asking a question instead of answering ────────────────
+    const onboardingContext = `User is in onboarding. Last question asked: "${session.lastAskedQuestion || ONBOARDING_QUESTIONS[0]}"`;
+    const checkPrompt = `${onboardingContext}\n\nUser said: "${message}"\n\nIs the user asking a question, expressing a concern, or asking for help that's UNRELATED to answering the specific question above? Respond with only 'YES' or 'NO'.`;
+
+    try {
+      const isInterrupt = (await chat(checkPrompt, [], "You are an intent classifier.")).toUpperCase().includes('YES');
+      if (isInterrupt) {
+        console.log('💡 User interrupted onboarding with a question. Answering directly...');
+        // Handle as active session temporarily
+        const answer = await backboardChat(userId, `[USER IS IN ONBOARDING - QUESTION: ${session.lastAskedQuestion || 'N/A'}]\n\nUser says: ${message}`, ROOTS_SYSTEM_PROMPT);
+        return `${answer}\n\n(Whenever you're ready, let's continue: *${session.lastAskedQuestion || ONBOARDING_QUESTIONS[0]}*)`;
+      }
+    } catch (err) {
+      console.error('[Coordinator] Intent check failed:', err.message);
+    }
+    // ── END INTERRUPT CHECK ─────────────────────────────────────────────────────────────
+
     session.answers.push(message);
 
     // Save the Q&A context for Gemini to read

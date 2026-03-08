@@ -12,9 +12,14 @@ async function sendWhatsAppMessage(to, body, mediaUrl = null) {
     payload.mediaUrl = [mediaUrl];
   }
 
-  const result = await client.messages.create(payload);
-  console.log('Twilio send result:', result.sid, result.status);
-  return result;
+  try {
+    const result = await client.messages.create(payload);
+    console.log('✅ Twilio send success:', result.sid, result.status);
+    return result;
+  } catch (err) {
+    console.error('❌ Twilio send error:', err.code, err.message, err.moreInfo);
+    throw err;
+  }
 }
 
 module.exports = { sendWhatsAppMessage };

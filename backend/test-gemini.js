@@ -1,15 +1,32 @@
-const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyCc0fvfqMvfRFJaIMPPByYSxn_MM5n37Y8";
+require('dotenv').config({ path: './backend/.env' });
+const axios = require('axios');
+const key = process.env.GEMINI_API_KEY;
+
+if (!key) {
+    console.error('❌ GEMINI_API_KEY is not set in environment!');
+    process.exit(1);
+}
+
+console.log(`Key: [${key}]`);
+console.log(`Length: ${key.length}`);
+console.log(`Hex: ${Buffer.from(key).toString('hex')}`);
+
+const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${key.trim()}`;
 const data = {
     contents: [{
-        parts: [{ text: "Say hello" }]
+        parts: [{ text: "Hello" }]
     }]
 };
 
-fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-})
-    .then(res => res.json())
-    .then(json => console.log(JSON.stringify(json, null, 2)))
-    .catch(err => console.error(err));
+axios.post(url, data)
+    .then(res => {
+        console.log('✅ Success!');
+    })
+    .catch(err => {
+        console.log('❌ Error:');
+        if (err.response) {
+            console.log(JSON.stringify(err.response.data, null, 2));
+        } else {
+            console.log(err.message);
+        }
+    });
