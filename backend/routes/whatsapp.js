@@ -2,12 +2,19 @@ const express = require('express');
 const router = express.Router();
 const coordinator = require('../agents/coordinator');
 const axios = require('axios');
-const { transcribeAudio } = require('../services/gemini');
+const { transcribeAudio, extractDocumentData } = require('../services/gemini');
 const { textToSpeechUrl } = require('../services/elevenlabs');
 const { uploadBuffer } = require('../services/cloudinary');
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dbgqfpoyp',
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 router.post('/', async (req, res) => {
-  let message = req.body.Body;
+  let message = req.body.Body || '';
   const from = req.body.From;
   const numMedia = parseInt(req.body.NumMedia || '0');
 
@@ -15,28 +22,50 @@ router.post('/', async (req, res) => {
 
   try {
     let isAudio = false;
+    let isImage = false;
 
-    // Check if the user sent a Twilio voice note
-    if (numMedia > 0 && req.body.MediaContentType0 && req.body.MediaContentType0.startsWith('audio/')) {
-      isAudio = true;
-      console.log('🎙️ Received audio message from', from);
+    // Check media type
+    if (numMedia > 0 && req.body.MediaContentType0) {
+      const contentType = req.body.MediaContentType0;
+      const mediaUrl = req.body.MediaUrl0;
 
-      const audioUrl = req.body.MediaUrl0;
+      if (contentType.startsWith('audio/')) {
+        // ── AUDIO: transcribe with Gemini then reply with TTS ──
+        isAudio = true;
+        console.log('🎙️ Received audio message from', from);
 
-      // Fetch the audio buffer from Twilio securely
-      const authHeader = 'Basic ' + Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
-      const mediaRes = await axios.get(audioUrl, {
-        responseType: 'arraybuffer',
-        headers: { Authorization: authHeader }
-      });
+        const authHeader = 'Basic ' + Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
+        const mediaRes = await axios.get(mediaUrl, {
+          responseType: 'arraybuffer',
+          headers: { Authorization: authHeader }
+        });
 
-      const audioBuffer = Buffer.from(mediaRes.data);
+        const audioBuffer = Buffer.from(mediaRes.data);
+        message = await transcribeAudio(audioBuffer, contentType);
+        console.log(`📝 Transcribed user audio: "${message}"`);
 
-      // Transcribe using Gemini 2.5 Flash
-      message = await transcribeAudio(audioBuffer, req.body.MediaContentType0);
-      console.log(`📝 Transcribed user audio: "${message}"`);
+      } else if (contentType.startsWith('image/')) {
+        // ── IMAGE: upload to Cloudinary and extract document data ──
+        isImage = true;
+        console.log('📄 Received image/document from', from);
+
+        const uploadResult = await cloudinary.uploader.upload(mediaUrl, { folder: 'roots_intake' });
+        console.log('☁️ Uploaded to Cloudinary:', uploadResult.secure_url);
+
+        const extractedData = await extractDocumentData(uploadResult.secure_url);
+        console.log('📋 Extracted Data:', extractedData);
+
+        const docReply = `I've processed your *${extractedData.docType}* 📄\n\n*Next step:* ${extractedData.nextStep}\n\nIs there anything else I can help you with?`;
+
+        if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+          const { sendWhatsAppMessage } = require('../services/twilio');
+          await sendWhatsAppMessage(from, docReply);
+        }
+        return; // Document handled — exit early
+      }
     }
 
+    // ── Standard text or transcribed audio flow ──
     let rawResponse = await coordinator.handle(from, message);
 
     let replyText = typeof rawResponse === 'string' ? rawResponse : rawResponse.text;
@@ -49,7 +78,7 @@ router.post('/', async (req, res) => {
 
     let audioMediaUrl = null;
 
-    // If they sent audio, reply with TTS audio instead of an image (Twilio can send audio + text)
+    // If they sent an audio voice note, reply with a TTS voice note
     if (isAudio) {
       console.log('🗣️ Generating TTS response via ElevenLabs...');
       const ttsBuffer = await textToSpeechUrl(replyText);
@@ -61,7 +90,7 @@ router.post('/', async (req, res) => {
     // Only send via Twilio if credentials exist
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
       const { sendWhatsAppMessage } = require('../services/twilio');
-      // If there's audio, send the audio. Otherwise, send the image if one was generated.
+      // Prefer audio reply > image graphic > plain text
       const finalMediaUrl = audioMediaUrl || imageMediaUrl;
       await sendWhatsAppMessage(from, replyText, finalMediaUrl);
     }

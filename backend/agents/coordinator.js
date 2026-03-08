@@ -57,7 +57,7 @@ async function handle(userId, message) {
   if (session.stage === 'status_q1') {
     session.statusType = message;
     session.stage = 'status_q2';
-    return "How many months ago did you submit your application?";
+    return "How many months have you been waiting since you submitted your application?";
   }
 
   if (session.stage === 'status_q2') {

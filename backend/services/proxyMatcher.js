@@ -3,7 +3,7 @@ const proxies = require('../data/proxies.json');
 function matchProxies(userProfile) {
   // Simple matching — in production this would be Backboard semantic matching
   // For now score based on profession keywords and family structure
-  
+
   const scored = proxies.map(proxy => {
     let score = 0;
     const profileText = JSON.stringify(userProfile).toLowerCase();
@@ -16,10 +16,10 @@ function matchProxies(userProfile) {
 
     // Family match
     if (answers[3]) {
-      const hasFamily = answers[3].toLowerCase().includes('family') || 
-                        answers[3].toLowerCase().includes('wife') ||
-                        answers[3].toLowerCase().includes('husband') ||
-                        answers[3].toLowerCase().includes('child');
+      const hasFamily = answers[3].toLowerCase().includes('family') ||
+        answers[3].toLowerCase().includes('wife') ||
+        answers[3].toLowerCase().includes('husband') ||
+        answers[3].toLowerCase().includes('child');
       const proxyHasFamily = proxy.familySize !== 'Solo';
       if (hasFamily === proxyHasFamily) score += 2;
     }
@@ -35,14 +35,14 @@ function matchProxies(userProfile) {
 
 function formatProxyMessage(userProfile) {
   const matches = matchProxies(userProfile);
-  
+
   let msg = "👥 *People who made your exact move*\n\n";
   msg += "Here's what they wish they'd known:\n\n";
 
   matches.forEach(proxy => {
     msg += `*${proxy.name}* — ${proxy.origin}, ${proxy.profession}\n`;
     msg += `Arrived: ${proxy.arrived}\n\n`;
-    
+
     // Show top 2 most relevant insights
     const topInsights = proxy.wisdomEntries.slice(0, 2);
     topInsights.forEach(entry => {
@@ -55,4 +55,4 @@ function formatProxyMessage(userProfile) {
   return msg;
 }
 
-module.exports = { formatProxyMessage };
+module.exports = { formatProxyMessage, matchProxies };
