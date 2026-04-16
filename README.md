@@ -1,4 +1,4 @@
-# 49th: The AI that settles you in.
+# 49th: The AI that settles you in
 
 ---
 
