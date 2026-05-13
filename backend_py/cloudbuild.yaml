@@ -1,0 +1,67 @@
+substitutions:
+  _SERVICE: roots-backend
+  _REGION: us-central1
+  _REPO: roots
+  _SCHEDULER_JOB: roots-deadline-watchdog
+  _SCHEDULER_CRON: "0 14 * * *"
+  _SERVICE_ACCOUNT: roots-runtime
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}
+      - backend_py
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --service-account=${_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
+      - --set-env-vars=GCP_PROJECT=${PROJECT_ID},GCP_LOCATION=${_REGION}
+      - --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest,TWILIO_ACCOUNT_SID=TWILIO_ACCOUNT_SID:latest,TWILIO_AUTH_TOKEN=TWILIO_AUTH_TOKEN:latest,TWILIO_WHATSAPP_FROM=TWILIO_WHATSAPP_FROM:latest,ELEVENLABS_API_KEY=ELEVENLABS_API_KEY:latest,SCHEDULER_SHARED_SECRET=SCHEDULER_SHARED_SECRET:latest
+
+  - id: schedule
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        URL=$(gcloud run services describe ${_SERVICE} --region=${_REGION} --format='value(status.url)')
+        if gcloud scheduler jobs describe ${_SCHEDULER_JOB} --location=${_REGION} >/dev/null 2>&1; then
+          gcloud scheduler jobs update http ${_SCHEDULER_JOB} \
+            --location=${_REGION} \
+            --schedule="${_SCHEDULER_CRON}" \
+            --uri="$$URL/jobs/deadline-watchdog" \
+            --http-method=POST \
+            --oidc-service-account-email=${_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
+        else
+          gcloud scheduler jobs create http ${_SCHEDULER_JOB} \
+            --location=${_REGION} \
+            --schedule="${_SCHEDULER_CRON}" \
+            --uri="$$URL/jobs/deadline-watchdog" \
+            --http-method=POST \
+            --oidc-service-account-email=${_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
+        fi
+
+images:
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}
+
+options:
+  logging: CLOUD_LOGGING_ONLY
