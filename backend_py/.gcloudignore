@@ -1,0 +1,14 @@
+# Cloud Build context — only ship what the Dockerfile needs.
+.git/
+.gitignore
+.dockerignore
+.env
+.env.*
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+README.md

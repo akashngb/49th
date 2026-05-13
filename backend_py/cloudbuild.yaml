@@ -4,7 +4,12 @@ substitutions:
   _REPO: roots
   _SCHEDULER_JOB: roots-deadline-watchdog
   _SCHEDULER_CRON: "0 14 * * *"
+  _SCHEDULER_TZ: America/Toronto
   _SERVICE_ACCOUNT: roots-runtime
+  _VERTEX_SEARCH_DATASTORE: ""
+  _VERTEX_SEARCH_LOCATION: "global"
+  _MEDIA_BUCKET: ""
+  _DEADLINE_WINDOW_DAYS: "7"
 
 steps:
   - id: build
@@ -13,7 +18,7 @@ steps:
       - build
       - -t
       - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_SERVICE}:${SHORT_SHA}
-      - backend_py
+      - .
 
   - id: push
     name: gcr.io/cloud-builders/docker
@@ -33,7 +38,13 @@ steps:
       - --platform=managed
       - --allow-unauthenticated
       - --service-account=${_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
-      - --set-env-vars=GCP_PROJECT=${PROJECT_ID},GCP_LOCATION=${_REGION}
+      - --timeout=120s
+      - --memory=1Gi
+      - --cpu=1
+      - --concurrency=20
+      - --min-instances=0
+      - --max-instances=10
+      - --set-env-vars=GCP_PROJECT=${PROJECT_ID},GCP_LOCATION=${_REGION},VERTEX_SEARCH_DATASTORE=${_VERTEX_SEARCH_DATASTORE},VERTEX_SEARCH_LOCATION=${_VERTEX_SEARCH_LOCATION},MEDIA_BUCKET=${_MEDIA_BUCKET},DEADLINE_WINDOW_DAYS=${_DEADLINE_WINDOW_DAYS}
       - --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest,TWILIO_ACCOUNT_SID=TWILIO_ACCOUNT_SID:latest,TWILIO_AUTH_TOKEN=TWILIO_AUTH_TOKEN:latest,TWILIO_WHATSAPP_FROM=TWILIO_WHATSAPP_FROM:latest,ELEVENLABS_API_KEY=ELEVENLABS_API_KEY:latest,SCHEDULER_SHARED_SECRET=SCHEDULER_SHARED_SECRET:latest
 
   - id: schedule
@@ -44,20 +55,25 @@ steps:
       - |
         set -euo pipefail
         URL=$(gcloud run services describe ${_SERVICE} --region=${_REGION} --format='value(status.url)')
+        SA=${_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
         if gcloud scheduler jobs describe ${_SCHEDULER_JOB} --location=${_REGION} >/dev/null 2>&1; then
           gcloud scheduler jobs update http ${_SCHEDULER_JOB} \
             --location=${_REGION} \
             --schedule="${_SCHEDULER_CRON}" \
+            --time-zone="${_SCHEDULER_TZ}" \
             --uri="$$URL/jobs/deadline-watchdog" \
             --http-method=POST \
-            --oidc-service-account-email=${_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
+            --oidc-service-account-email="$$SA" \
+            --oidc-token-audience="$$URL"
         else
           gcloud scheduler jobs create http ${_SCHEDULER_JOB} \
             --location=${_REGION} \
             --schedule="${_SCHEDULER_CRON}" \
+            --time-zone="${_SCHEDULER_TZ}" \
             --uri="$$URL/jobs/deadline-watchdog" \
             --http-method=POST \
-            --oidc-service-account-email=${_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
+            --oidc-service-account-email="$$SA" \
+            --oidc-token-audience="$$URL"
         fi
 
 images:

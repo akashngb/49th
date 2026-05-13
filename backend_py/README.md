@@ -49,13 +49,40 @@ onboarding flow against `ngrok` and Twilio's sandbox.
 
 ## Deploy
 
+Run from inside `backend_py/` so the build context only includes the Python
+service (the JS backend, frontend, and node_modules are not uploaded):
+
 ```bash
-gcloud builds submit --config backend_py/cloudbuild.yaml \
-  --substitutions=_SERVICE=roots-backend,_REGION=us-central1
+cd backend_py
+gcloud builds submit . --config cloudbuild.yaml \
+  --substitutions=_REGION=us-central1,\
+_VERTEX_SEARCH_DATASTORE=your-datastore-id,\
+_MEDIA_BUCKET=your-public-bucket
 ```
 
-`cloudbuild.yaml` builds the image, deploys to Cloud Run, and idempotently
-creates/updates the Cloud Scheduler job that pings the watchdog daily at 14:00.
+`cloudbuild.yaml` builds the image, deploys to Cloud Run (1 vCPU / 1 GiB /
+concurrency 20 / 120s request timeout), and idempotently creates/updates the
+Cloud Scheduler job that pings the watchdog daily at 14:00 America/Toronto.
+
+## One-time setup
+
+```bash
+# Artifact Registry repo for the image
+gcloud artifacts repositories create roots --repository-format=docker --location=us-central1
+
+# Runtime service account
+gcloud iam service-accounts create roots-runtime
+for role in datastore.user discoveryengine.viewer storage.objectAdmin \
+            secretmanager.secretAccessor run.invoker; do
+  gcloud projects add-iam-policy-binding "$(gcloud config get-value project)" \
+    --member="serviceAccount:roots-runtime@$(gcloud config get-value project).iam.gserviceaccount.com" \
+    --role="roles/$role"
+done
+
+# Public-read GCS bucket Twilio fetches MP3s from
+gsutil mb -l us-central1 gs://your-public-bucket
+gsutil iam ch allUsers:objectViewer gs://your-public-bucket
+```
 
 ## Secrets
 
@@ -64,7 +91,15 @@ The build pulls these from Secret Manager (`--set-secrets`):
 - `GEMINI_API_KEY`
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`
 - `ELEVENLABS_API_KEY`
-- `SCHEDULER_SHARED_SECRET` (verifies the watchdog endpoint isn't called by random traffic)
+- `SCHEDULER_SHARED_SECRET` (additional belt-and-suspenders on top of OIDC)
 
-Project + location + datastore + memory-corpus IDs are plain env vars set
-on the service.
+Project + location + datastore + bucket IDs are passed as plain build
+substitutions and end up as plain env vars on the service.
+
+## Memory backend
+
+The "Vertex AI Memory" abstraction is backed by **Firestore** in this
+build — one document per WhatsApp number under the `roots_memory`
+collection. Firestore is the production GCP pattern for short-term
+agent memory: strongly consistent, sub-100ms reads, and natively
+integrates with the Cloud Run service account.

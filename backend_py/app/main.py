@@ -1,13 +1,23 @@
-"""FastAPI entry point — Twilio WhatsApp webhook + Cloud Scheduler hook."""
+"""FastAPI entry point — Twilio WhatsApp webhook + Cloud Scheduler hook.
+
+The Twilio webhook returns empty TwiML synchronously and pushes the
+agent + TTS + outbound work onto a FastAPI ``BackgroundTask``. Twilio's
+webhook timeout is ~15 seconds; a Gemini → Vertex Search → ElevenLabs
+round-trip can easily exceed that, which would otherwise drop messages
+silently.
+"""
 from __future__ import annotations
 
 import logging
 import os
 
-from fastapi import FastAPI, Form, Request, Response
+from fastapi import BackgroundTasks, FastAPI, Form, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
 
+from twilio.request_validator import RequestValidator
+
 from app.agents import coordinator, deadline_watchdog
+from app.config import settings
 from app.services import elevenlabs_tts, media_storage, twilio_client
 from app.twiml import empty_response
 
@@ -28,48 +38,79 @@ def health() -> dict[str, str]:
 @app.post("/webhook")
 async def webhook(
     request: Request,
+    background: BackgroundTasks,
     From: str = Form(""),
     Body: str = Form(""),
     NumMedia: str = Form("0"),
     MediaUrl0: str = Form(""),
     MediaContentType0: str = Form(""),
 ) -> Response:
-    """Twilio WhatsApp webhook.
+    """Twilio WhatsApp webhook. Acks immediately; agent work runs after the
+    response is flushed via BackgroundTasks."""
+    if not await _verify_twilio(request):
+        return Response(status_code=403)
 
-    Twilio expects a synchronous TwiML response, but our agent calls
-    (Gemini, Vertex Search, ElevenLabs) can each take several seconds.
-    We answer Twilio with empty TwiML immediately and send the real reply
-    via the REST API so the caller never sees a timeout.
-    """
     has_media = (NumMedia or "0") != "0" and bool(MediaUrl0)
     log.info("inbound from=%s has_media=%s body_len=%d", From, has_media, len(Body or ""))
 
+    background.add_task(
+        _process_inbound,
+        From,
+        Body,
+        MediaUrl0 if has_media else None,
+        MediaContentType0 or None,
+    )
+    return Response(content=empty_response(), media_type="application/xml")
+
+
+async def _process_inbound(
+    from_: str,
+    body: str,
+    media_url: str | None,
+    media_mime: str | None,
+) -> None:
+    """Run the full agent pipeline and send the reply out-of-band."""
     try:
         reply_text = await coordinator.route(
-            From,
-            text=Body,
-            media_url=MediaUrl0 if has_media else None,
-            media_mime=MediaContentType0 or None,
+            from_,
+            text=body,
+            media_url=media_url,
+            media_mime=media_mime,
         )
     except Exception:
         log.exception("coordinator failure")
         reply_text = "Sorry — something went wrong on my end. Please try again."
 
-    # Synthesise voice note + send via Twilio REST (out-of-band).
     try:
-        media_url = await _maybe_tts(reply_text)
-        twilio_client.send_whatsapp(From, reply_text, media_url=media_url)
+        media = await _maybe_tts(reply_text)
+        twilio_client.send_whatsapp(from_, reply_text, media_url=media)
     except Exception:
-        log.exception("outbound send failed")
+        log.exception("outbound send failed for %s", from_)
 
-    # Acknowledge Twilio synchronously with empty TwiML.
-    return Response(content=empty_response(), media_type="application/xml")
+
+async def _verify_twilio(request: Request) -> bool:
+    """Validate the X-Twilio-Signature header. Skipped when the auth token
+    isn't configured (local dev, ngrok-only)."""
+    token = settings.twilio_auth_token
+    if not token:
+        return True
+    signature = request.headers.get("X-Twilio-Signature", "")
+    if not signature:
+        return False
+    # Twilio signs the full https URL it called; behind Cloud Run's HTTPS
+    # load balancer, we rebuild it from X-Forwarded-Proto + Host.
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+    url = f"{proto}://{host}{request.url.path}"
+    form_data = await request.form()
+    params = {k: form_data[k] for k in form_data.keys()}
+    return RequestValidator(token).validate(url, params, signature)
 
 
 async def _maybe_tts(text: str) -> str | None:
-    """Best-effort voice note generation. Failures fall through to text-only."""
+    """Best-effort voice-note generation. Skipped for very long replies to
+    bound cost and latency; failures fall through to text-only."""
     if not text or len(text) > 1500:
-        # Skip TTS for very long replies — keeps cost and latency bounded.
         return None
     try:
         audio = await elevenlabs_tts.synthesize(text)
@@ -80,8 +121,7 @@ async def _maybe_tts(text: str) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# Cloud Scheduler entry point — keep this on the same Cloud Run service so
-# we don't have to deploy a second image.
+# Cloud Scheduler entry point — same Cloud Run service.
 # ---------------------------------------------------------------------------
 
 
@@ -92,6 +132,8 @@ def watchdog_endpoint(request: Request) -> JSONResponse:
         provided = request.headers.get("X-Scheduler-Secret", "")
         if provided != expected:
             return JSONResponse({"error": "unauthorized"}, status_code=401)
+    # When OIDC is configured on the scheduler job, Cloud Run validates the
+    # token at the edge before this handler runs.
 
     summary = deadline_watchdog.run()
     return JSONResponse(summary)
